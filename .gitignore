@@ -1,0 +1,7 @@
+build/
+*.pyc
+*.swp
+dist/
+.idea
+.tox
+yelp_clog.egg-info/

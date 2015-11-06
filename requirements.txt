@@ -1,0 +1,8 @@
+boto
+pyflakes
+coverage
+testifycompat
+mock
+pytest
+PyYAML
+simplejson
