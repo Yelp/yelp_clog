@@ -1,0 +1,4 @@
+include *.md *.py *.txt
+recursive-include clog *.py *.thrift
+recursive-include testing *.py
+recursive-include tests *.py
