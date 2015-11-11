@@ -38,7 +38,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'python-clog'
-copyright = u'2013, Yelp Infra Team'
+copyright = u'2015, Yelp Inc.'
 
 from clog import __version__ as version
 release = version
