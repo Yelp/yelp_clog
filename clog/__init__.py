@@ -55,5 +55,5 @@ _pyflakes_ignore = [
     reset_default_loggers,
 ]
 
-version_info = 2, 2, 9
+version_info = 2, 2, 11
 __version__ = '.'.join(map(str, version_info))

@@ -19,6 +19,7 @@ docs:
 
 clean:
 	make -C docs clean
+	rm -rf build dist *.egg-info/ .tox
 	find . -iname *.pyc -delete
 
 flakes:

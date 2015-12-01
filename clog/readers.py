@@ -183,9 +183,6 @@ class StreamTailerSetupError(Exception):
 def get_settings(setting):
     with open(SETTINGS_FILE) as settings_file:
         settings = load(settings_file)
-    if setting == 'HOST_TO_TAIL_HOST':
-        default_scribe_tail_host = get_settings('DEFAULT_SCRIBE_TAIL_HOST')
-        settings[setting][default_scribe_tail_host] = 'local'
     return settings[setting]
 
 
@@ -423,14 +420,14 @@ def get_s3_info(hostname, stream_name=None):
     ecosystem = get_ecosystem(hostname)
     if ecosystem == 'prod':
         return (
-            get_settings['S3_HOST'],
-            get_bucket(get_settings['PROD_BUCKETS'], stream_name) if stream_name else get_settings['PROD_BUCKETS'],
+            get_settings('S3_HOST'),
+            get_bucket(get_settings('PROD_BUCKETS'), stream_name) if stream_name else get_settings('PROD_BUCKETS'),
             'logs/',
         )
     else:
         return (
-            get_settings['S3_HOST'],
-            get_bucket(get_settings['NONPROD_BUCKETS'], stream_name) if stream_name else get_settings['NONPROD_BUCKETS'],
+            get_settings('S3_HOST'),
+            get_bucket(get_settings('NONPROD_BUCKETS'), stream_name) if stream_name else get_settings('NONPROD_BUCKETS'),
             ecosystem + '/',
         )
 
@@ -438,7 +435,7 @@ def get_ecosystem(hostname):
     if hostname == 'scribe.local.yelpcorp.com':
         return get_ecosystem_from_file()
     else:
-        return get_settings['HOST_TO_ECOSYSTEM'][hostname]
+        return get_settings('HOST_TO_ECOSYSTEM')[hostname]
 
 def get_ecosystem_from_file():
     with open("/nail/etc/ecosystem") as f:
@@ -507,11 +504,6 @@ class NetCLogStreamReader(object):
         self.bufsize = int(bufsize)
         self.automagic_recovery = automagic_recovery
         self.localS3 = localS3
-
-        if self.localS3:
-            # XXX: We don't know how to handle stagespam
-            if get_ecosystem(self.host) == 'stagespam':
-                self.localS3 = False
 
         self.aws_access_key_id, self.aws_secret_access_key = read_s3_keypair()
 
