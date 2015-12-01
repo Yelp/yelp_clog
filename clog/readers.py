@@ -423,14 +423,14 @@ def get_s3_info(hostname, stream_name=None):
     ecosystem = get_ecosystem(hostname)
     if ecosystem == 'prod':
         return (
-            get_settings['S3_HOST'],
-            get_bucket(get_settings['PROD_BUCKETS'], stream_name) if stream_name else get_settings['PROD_BUCKETS'],
+            get_settings('S3_HOST'),
+            get_bucket(get_settings('PROD_BUCKETS'), stream_name) if stream_name else get_settings('PROD_BUCKETS'),
             'logs/',
         )
     else:
         return (
-            get_settings['S3_HOST'],
-            get_bucket(get_settings['NONPROD_BUCKETS'], stream_name) if stream_name else get_settings['NONPROD_BUCKETS'],
+            get_settings('S3_HOST'),
+            get_bucket(get_settings('NONPROD_BUCKETS'), stream_name) if stream_name else get_settings('NONPROD_BUCKETS'),
             ecosystem + '/',
         )
 
@@ -438,7 +438,7 @@ def get_ecosystem(hostname):
     if hostname == 'scribe.local.yelpcorp.com':
         return get_ecosystem_from_file()
     else:
-        return get_settings['HOST_TO_ECOSYSTEM'][hostname]
+        return get_settings('HOST_TO_ECOSYSTEM')[hostname]
 
 def get_ecosystem_from_file():
     with open("/nail/etc/ecosystem") as f:
