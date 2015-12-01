@@ -183,9 +183,6 @@ class StreamTailerSetupError(Exception):
 def get_settings(setting):
     with open(SETTINGS_FILE) as settings_file:
         settings = load(settings_file)
-    if setting == 'HOST_TO_TAIL_HOST':
-        default_scribe_tail_host = get_settings('DEFAULT_SCRIBE_TAIL_HOST')
-        settings[setting][default_scribe_tail_host] = 'local'
     return settings[setting]
 
 
