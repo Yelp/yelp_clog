@@ -505,11 +505,6 @@ class NetCLogStreamReader(object):
         self.automagic_recovery = automagic_recovery
         self.localS3 = localS3
 
-        if self.localS3:
-            # XXX: We don't know how to handle stagespam
-            if get_ecosystem(self.host) == 'stagespam':
-                self.localS3 = False
-
         self.aws_access_key_id, self.aws_secret_access_key = read_s3_keypair()
 
     class _ContextManager(object):
