@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2015 Yelp Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,8 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import subprocess
+import sys
 
-# -*- coding: utf-8 -*-
 from staticconf.testing import MockConfiguration
 import testifycompat as T
 
@@ -55,3 +57,18 @@ class TestConfigure(object):
         T.assert_equal(config.scribe_host, 'what')
         T.assert_equal(config.scribe_disable, True)
 
+    def test_configure_from_object_changes_scribe_disable(self):
+        proc = subprocess.Popen(
+            (
+                sys.executable, '-c',
+                'import clog.config\n'
+                'print(clog.config.scribe_disable)\n'
+                'class C(object):\n'
+                '    scribe_disable = False\n'
+                'clog.config.configure_from_object(C)\n'
+                'print(clog.config.scribe_disable)\n'
+            ),
+            stdout=subprocess.PIPE,
+        )
+        out = proc.communicate()[0].decode('UTF-8')
+        assert out == 'True\nFalse\n'
