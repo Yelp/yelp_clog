@@ -183,7 +183,10 @@ class ScribeS3(object):
         return ret
 
     def get_log(self, stream_name, date, aggregator, part):
-        """Get a specific log"""
+        """Get a specific log
+
+        .. warning:: This function is deprecated and should not be used.
+        """
         key_name = self.LOG_FILE_PATH.format(
             prefix=self.s3_key_prefix,
             stream=stream_name,

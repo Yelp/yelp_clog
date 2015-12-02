@@ -418,18 +418,17 @@ def get_s3_info(hostname, stream_name=None):
     returned as a dict.
     """
     ecosystem = get_ecosystem(hostname)
-    if ecosystem == 'prod':
-        return (
-            get_settings('S3_HOST'),
-            get_bucket(get_settings('PROD_BUCKETS'), stream_name) if stream_name else get_settings('PROD_BUCKETS'),
-            'logs/',
-        )
+    buckets = get_settings('ECOSYSTEM_TO_BUCKETS')[ecosystem]
+    if stream_name:
+        return get_settings('S3_HOST'), get_bucket(buckets, stream_name)
+    return get_settings('S3_HOST'), buckets
+
+def _split_bucket_and_prefix(bucket):
+    bucket_prefix = bucket.split('/', 1)
+    if len(bucket_prefix) == 1:
+        return bucket_prefix[0], None
     else:
-        return (
-            get_settings('S3_HOST'),
-            get_bucket(get_settings('NONPROD_BUCKETS'), stream_name) if stream_name else get_settings('NONPROD_BUCKETS'),
-            ecosystem + '/',
-        )
+        return tuple(bucket_prefix)
 
 def get_ecosystem(hostname):
     if hostname == 'scribe.local.yelpcorp.com':
@@ -539,12 +538,12 @@ class NetCLogStreamReader(object):
             self.stream_name = stream_name
             self.start_date = start_date
             self.end_date = end_date
-            s3_host, s3_bucket, s3_prefix = get_s3_info(host, stream_name)
-
+            s3_host, s3_bucket = get_s3_info(host, stream_name)
+            bucket, prefix = _split_bucket_and_prefix(s3_bucket)
             self.s3_connection = ScribeS3(
                 s3_host=s3_host,
-                s3_bucket=s3_bucket,
-                s3_key_prefix=s3_prefix,
+                s3_bucket=bucket,
+                s3_key_prefix=prefix,
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
             )
@@ -598,9 +597,9 @@ class NetCLogStreamReader(object):
 
     class ListContextManager(object):
         def __init__(self, host, aws_access_key_id, aws_secret_access_key):
-            s3_host, s3_buckets, s3_prefix = get_s3_info(host)
-            s3_bucket = s3_buckets['standard']
-            s3_tmp_bucket = s3_buckets['tmp']
+            s3_host, s3_buckets = get_s3_info(host)
+            s3_bucket, s3_prefix = _split_bucket_and_prefix(s3_buckets['standard'])
+            s3_tmp_bucket, s3_tmp_prefix = _split_bucket_and_prefix(s3_buckets['tmp'])
 
             s3_connection = ScribeS3(
                 s3_host=s3_host,
@@ -615,7 +614,7 @@ class NetCLogStreamReader(object):
                 s3_tmp_connection = ScribeS3(
                     s3_host=s3_host,
                     s3_bucket=s3_tmp_bucket,
-                    s3_key_prefix=s3_prefix,
+                    s3_key_prefix=s3_tmp_prefix,
                     aws_access_key_id=aws_access_key_id,
                     aws_secret_access_key=aws_secret_access_key,
                 )
