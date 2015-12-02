@@ -418,18 +418,11 @@ def get_s3_info(hostname, stream_name=None):
     returned as a dict.
     """
     ecosystem = get_ecosystem(hostname)
-    if ecosystem == 'prod':
-        return (
-            get_settings('S3_HOST'),
-            get_bucket(get_settings('PROD_BUCKETS'), stream_name) if stream_name else get_settings('PROD_BUCKETS'),
-            'logs/',
-        )
-    else:
-        return (
-            get_settings('S3_HOST'),
-            get_bucket(get_settings('NONPROD_BUCKETS'), stream_name) if stream_name else get_settings('NONPROD_BUCKETS'),
-            ecosystem + '/',
-        )
+    buckets = get_settings('ECOSYSTEM_TO_BUCKETS')[ecosystem]
+    prefix = 'logs/' if ecosystem == 'prod' else 'logs/{0}/'.format(ecosystem)
+    if stream_name:
+        return get_settings('S3_HOST'), get_bucket(buckets, stream_name), prefix
+    return get_settings('S3_HOST'), buckets, prefix
 
 def get_ecosystem(hostname):
     if hostname == 'scribe.local.yelpcorp.com':
