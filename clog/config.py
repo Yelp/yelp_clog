@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2015 Yelp Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,8 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# -*- coding: utf-8 -*-
 """
 Configuration for :mod:`clog.global_state`. The following configuration
 settings are supported:
@@ -56,12 +55,12 @@ settings are supported:
 """
 import os
 
-import staticconf
+import staticconf.config
 from staticconf import loader
 
 namespace = 'clog'
 clog_namespace = staticconf.NamespaceGetters(namespace)
-
+reloader = staticconf.config.ReloadCallbackChain(namespace)
 
 clog_enable_file_logging = clog_namespace.get_bool('clog_enable_file_logging',
     default=False,
@@ -108,6 +107,7 @@ def configure_from_dict(config_dict):
     :param config_dict: a dict of config data
     """
     staticconf.DictConfiguration(config_dict, namespace=namespace)
+    reloader()
 
 
 def configure_from_object(config_obj):
@@ -116,6 +116,7 @@ def configure_from_object(config_obj):
     :param config_obj: an object or module with config attributes
     """
     loader.ObjectConfiguration(config_obj, namespace=namespace)
+    reloader()
 
 
 def configure(scribe_host, scribe_port, **kwargs):
@@ -128,3 +129,4 @@ def configure(scribe_host, scribe_port, **kwargs):
     kwargs['scribe_host'] = scribe_host
     kwargs['scribe_port'] = scribe_port
     staticconf.DictConfiguration(kwargs, namespace=namespace)
+    reloader()
