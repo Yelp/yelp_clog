@@ -17,7 +17,7 @@ Log lines to scribe using the default global logger.
 """
 
 from clog import config
-from clog.loggers import FileLogger, ScribeLogger
+from clog.loggers import FileLogger, ScribeLogger, StdoutLogger
 
 # global logger, used by module-level functions
 loggers = None
@@ -44,6 +44,10 @@ def check_create_default_loggers():
                                   config.scribe_port,
                                   config.scribe_retry_interval)
             loggers.append(logger)
+
+        if config.clog_enable_stdout_logging:
+            loggers.append(StdoutLogger())
+
 
 def reset_default_loggers():
     """

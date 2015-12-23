@@ -50,6 +50,9 @@ settings are supported:
     **clog_enable_file_logging**
         flag to enable logging to local files. (Default False)
 
+    **clog_enable_stdout_logging**
+        flag to enable logging to stdout. (Default false)
+
     **localS3**
         If True, will fetch s3 files directly rather than talking to a service.
 """
@@ -65,6 +68,10 @@ reloader = staticconf.config.ReloadCallbackChain(namespace)
 clog_enable_file_logging = clog_namespace.get_bool('clog_enable_file_logging',
     default=False,
     help="If True, create a FileLogger as the default logger.")
+
+clog_enable_stdout_logging = clog_namespace.get_bool('clog_enable_stdout_logging',
+    default=False,
+    help="If True, send all log lines to stdout.")
 
 log_dir = clog_namespace.get_string('log_dir',
     default=os.environ.get('TMPDIR', '/tmp'),
