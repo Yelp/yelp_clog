@@ -71,7 +71,7 @@ clog_enable_file_logging = clog_namespace.get_bool('clog_enable_file_logging',
 
 clog_enable_stdout_logging = clog_namespace.get_bool('clog_enable_stdout_logging',
     default=False,
-    help="If True, send all log lines to stdout.")
+    help="If True, send all log lines to stdout. Defaults to False")
 
 log_dir = clog_namespace.get_string('log_dir',
     default=os.environ.get('TMPDIR', '/tmp'),
