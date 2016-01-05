@@ -3,6 +3,11 @@
 Release Notes
 =============
 
+2.4.0
+-----
+* Add clog_enable_stdout_logging config option to dump log lines to stdout.
+  Defaults to false.
+
 1.4.0
 -----
 

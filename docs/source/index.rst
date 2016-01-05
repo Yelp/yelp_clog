@@ -12,7 +12,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   release_notes
+   changelog
    config
    global_state
    handlers

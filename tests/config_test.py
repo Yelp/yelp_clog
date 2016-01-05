@@ -36,13 +36,28 @@ class TestConfigure(object):
     def teardown_config(self):
         self.mock_config.__exit__()
 
+    def test_clog_enable_stdout_logging_true(self):
+        config_data = {
+            'clog_enable_stdout_logging': True,
+        }
+        config.configure_from_dict(config_data)
+        assert config.clog_enable_stdout_logging
+
+    def test_clog_enable_stdout_logging_false(self):
+        config_data = {
+            'clog_enable_stdout_logging': False,
+        }
+        config.configure_from_dict(config_data)
+        assert not config.clog_enable_stdout_logging
+
     def test_configure_from_dict(self):
         config_data = {
             'scribe_host': 'example.com',
-            'scribe_port': '5555'
+            'scribe_port': '5555',
         }
         config.configure_from_dict(config_data)
         T.assert_equal(config.scribe_host, config_data['scribe_host'])
+        assert not config.clog_enable_stdout_logging
 
     def test_configure_from_object(self):
         config_obj = BlankObject()
@@ -50,12 +65,14 @@ class TestConfigure(object):
         config_obj.scribe_port = 5555
         config.configure_from_object(config_obj)
         T.assert_equal(config.scribe_port, 5555)
+        assert not config.clog_enable_stdout_logging
 
     def test_configure(self):
         config.configure('what', '111', scribe_disable=True)
         T.assert_equal(config.scribe_port, 111)
         T.assert_equal(config.scribe_host, 'what')
         T.assert_equal(config.scribe_disable, True)
+        assert not config.clog_enable_stdout_logging
 
     def test_configure_from_object_changes_scribe_disable(self):
         proc = subprocess.Popen(

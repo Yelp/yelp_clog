@@ -37,7 +37,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'python-clog'
+project = u'yelp-clog'
 copyright = u'2015, Yelp Inc.'
 
 from clog import __version__ as version
@@ -152,7 +152,7 @@ html_static_path = ['_static']
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'python-clogdoc'
+htmlhelp_basename = 'yelp-clogdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -166,7 +166,7 @@ htmlhelp_basename = 'python-clogdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'python-clog.tex', u'python-clog Documentation',
+  ('index', 'yelp-clog.tex', u'yelp-clog Documentation',
    u'Yelp Infra Team', 'manual'),
 ]
 

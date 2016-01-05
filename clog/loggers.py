@@ -307,3 +307,13 @@ class MockLogger(object):
 
     def close(self):
         pass
+
+
+class StdoutLogger(object):
+    """Implementation that logs to stdout with stream name as a prefix."""
+
+    def log_line(self, stream, line):
+        sys.stdout.write('{0}:{1}\n'.format(stream, line))
+
+    def close(self):
+        sys.stdout.flush()
