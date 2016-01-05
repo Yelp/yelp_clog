@@ -51,7 +51,8 @@ settings are supported:
         flag to enable logging to local files. (Default False)
 
     **clog_enable_stdout_logging**
-        flag to enable logging to stdout. (Default false)
+        flag to enable logging to stdout. Each log line is prefixed with the
+        stream name. (Default False)
 
     **localS3**
         If True, will fetch s3 files directly rather than talking to a service.
