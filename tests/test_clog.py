@@ -141,14 +141,14 @@ class MiscellaneousCLogMethodsTest(CLogTestBase):
 class TestStdoutLogger(object):
 
     def test_log_line_and_close(self):
-        with mock.patch('sys.stdout') as mock_stderr:
+        with mock.patch('sys.stdout') as mock_stdout:
             logger = StdoutLogger()
             logger.log_line('stream1', first_line)
             logger.log_line('stream1', second_line)
             logger.close()
 
-        mock_stderr.write.assert_has_calls([
+        mock_stdout.write.assert_has_calls([
             mock.call('stream1:{0}\n'.format(first_line)),
             mock.call('stream1:{0}\n'.format(second_line))
         ])
-        T.assert_equal(mock_stderr.flush.call_count, 1)
+        T.assert_equal(mock_stdout.flush.call_count, 1)
