@@ -66,10 +66,12 @@ def _load_thrift():
     # available on the filesystem; it's included by scribe.thrift
     pkg_resources.resource_filename('clog', 'fb303.thrift')
 
-    path = pkg_resources.resource_filename('clog', 'scribe.thrift')
-    include_dir, fn = os.path.split(path)
+    path = os.path.abspath(
+        pkg_resources.resource_filename('clog', 'scribe.thrift'),
+    )
+    include_dir = os.path.dirname(path)
     return thriftpy.load(
-        fn, module_name='scribe_thrift', include_dirs=[include_dir])
+        path, module_name='scribe_thrift', include_dirs=[include_dir])
 
 
 scribe_thrift = _load_thrift()
