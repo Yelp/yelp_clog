@@ -3,6 +3,10 @@
 Release Notes
 =============
 
+2.4.1
+-----
+* Remove the thriftpy hard-pinning. Compatible now with thriftpy 0.1+ and 0.2+.
+
 2.4.0
 -----
 * Add clog_enable_stdout_logging config option to dump log lines to stdout.
