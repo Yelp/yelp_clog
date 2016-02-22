@@ -2,4 +2,3 @@ coverage
 mock
 pyflakes
 pytest
-testifycompat

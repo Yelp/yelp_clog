@@ -14,14 +14,14 @@
 # limitations under the License.
 import logging
 import mock
-from testifycompat import assert_equal, setup, assert_raises
+import pytest
 
 from clog import handlers, loggers
 
 
 class TestScribeHandler(object):
 
-    @setup
+    @pytest.fixture(autouse=True)
     def setup_handler(self):
         args = 'localhost', 4545, 'test_stream'
         self.handler = handlers.ScribeHandler(*args)
@@ -29,15 +29,15 @@ class TestScribeHandler(object):
             'name', logging.WARN, 'path', 50, 'oops', None, None)
 
     def test_init(self):
-        assert_equal(self.handler.stream, 'test_stream')
-        assert_equal(self.handler.logger.__class__, loggers.ScribeLogger)
+        assert self.handler.stream == 'test_stream'
+        assert self.handler.logger.__class__ == loggers.ScribeLogger
 
     def test_emit_exception(self):
         self.handler.logger.log_line = mock.Mock()
         self.handler.logger.log_line.side_effect = Exception("Ooops")
         with mock.patch('sys.stderr') as mock_stderr:
             self.handler.emit(self.record)
-            mock_stderr.write.assert_has_calls(mock.call('Exception: Ooops\n'))
+            assert mock.call('Exception: Ooops\n') in mock_stderr.write.call_args_list
 
     def test_emit(self):
         self.handler.logger.log_line = mock.Mock()
@@ -47,12 +47,13 @@ class TestScribeHandler(object):
     def test_emit_interrupt_exception(self):
         self.handler.logger.log_line = mock.Mock()
         self.handler.logger.log_line.side_effect = KeyboardInterrupt("Stop")
-        assert_raises(KeyboardInterrupt, self.handler.emit, self.record)
+        with pytest.raises(KeyboardInterrupt):
+            self.handler.emit(self.record)
 
 
 class TestCLogHandler(object):
 
-    @setup
+    @pytest.fixture(autouse=True)
     def setup_handler(self):
         self.stream = 'stream_name'
         self.record = mock.MagicMock()

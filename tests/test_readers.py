@@ -21,8 +21,6 @@ import tempfile
 import time
 
 import pytest
-from testifycompat import setup, teardown, assert_equal
-from testifycompat import assert_lt
 
 from clog import readers, loggers
 from testing.sandbox import scribed_sandbox
@@ -34,7 +32,7 @@ from testing.util import get_log_path
 @pytest.mark.acceptance_suite
 class TestCLogAcceptance(object):
 
-    @setup
+    @pytest.yield_fixture(autouse=True)
     def do_setup(self):
         # find an open port for scribe server to listen on
         self.scribe_port = find_open_port()
@@ -44,9 +42,7 @@ class TestCLogAcceptance(object):
 
         # to store status reports we get back from clog
         self.status_reports = []
-
-    @teardown
-    def cleanup_logs(self):
+        yield
         shutil.rmtree(self.scribe_logdir)
 
     def report_status_callback(self, is_error, msg):
@@ -66,7 +62,7 @@ class TestCLogAcceptance(object):
         for i in range(count):
             logger.log_line('timed_writes', 'some data')
         dt = time.time() - t0
-        assert_lt(dt, timeout)
+        assert dt < timeout
 
     def test_write_and_reconnect(self):
         with scribed_sandbox(self.scribe_port, self.scribe_logdir):
@@ -83,7 +79,7 @@ class TestCLogAcceptance(object):
         self.timed_writes(logger, 10000, 2.0)
 
         # make sure we didn't log too many error reports
-        assert_lt(len(self.status_reports), 10)
+        assert len(self.status_reports) < 10
         # make sure we did log at least one error
         assert any(is_error for (is_error, msg) in self.status_reports)
 
@@ -110,7 +106,7 @@ class TestCLogAcceptance(object):
 @pytest.mark.acceptance_suite
 class TestCLogStreamReaderAcceptance(object):
 
-    @setup
+    @pytest.yield_fixture(autouse=True)
     def setup_reader(self):
         self.directory = tempfile.mkdtemp()
         self.date = datetime.date(2009, 1, 1)
@@ -129,9 +125,7 @@ class TestCLogStreamReaderAcceptance(object):
             chunk_file.close()
 
         self.num_expected_lines = 3 * 10
-
-    @teardown
-    def cleanup_logs(self):
+        yield
         shutil.rmtree(self.directory, ignore_errors=True)
 
     def test(self):
@@ -141,5 +135,5 @@ class TestCLogStreamReaderAcceptance(object):
         num_lines = 0
         for line in stream_reader:
             num_lines += 1
-            assert_equal(line, "A log line\n")
-        assert_equal(self.num_expected_lines, num_lines)
+            assert line == "A log line\n"
+        assert self.num_expected_lines == num_lines

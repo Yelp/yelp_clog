@@ -20,8 +20,8 @@ import shutil
 import tempfile
 
 import mock
+import pytest
 import staticconf.testing
-import testifycompat as T
 
 from clog.handlers import CLogHandler, DEFAULT_FORMAT
 from clog.handlers import get_scribed_logger
@@ -36,11 +36,12 @@ complete_line = '%s\n%s\n' % (first_line, second_line)
 
 class TestGZipFileLogger(object):
 
-    @T.setup_teardown
+    @pytest.yield_fixture(autouse=True)
     def setup_log_dir(self):
         self.log_dir = tempfile.mkdtemp()
-        with staticconf.testing.MockConfiguration(log_dir=self.log_dir,
-                                                  namespace='clog'):
+        with staticconf.testing.MockConfiguration(
+            log_dir=self.log_dir, namespace='clog',
+        ):
             yield
         shutil.rmtree(self.log_dir)
 
@@ -60,7 +61,7 @@ class TestGZipFileLogger(object):
 
         log_filename = GZipFileLogger.get_filename(stream)
         content = self._open_and_remove(log_filename)
-        T.assert_equal(content, complete_line)
+        assert content == complete_line
 
     def test_single_day(self):
         stream = 'second'
@@ -72,7 +73,7 @@ class TestGZipFileLogger(object):
 
         log_filename = GZipFileLogger.get_filename(stream, day=day)
         content = self._open_and_remove(log_filename)
-        T.assert_equal(content, complete_line)
+        assert content == complete_line
 
     def test_multi_day(self):
         stream = 'multi'
@@ -88,18 +89,18 @@ class TestGZipFileLogger(object):
         for day in (first_day, second_day):
             log_filename = GZipFileLogger.get_filename(stream, day=day)
             content = self._open_and_remove(log_filename)
-            T.assert_equal(content, complete_line)
+            assert content == complete_line
 
 
 class MyError(Exception):
     pass
 
 
-class CLogTestBase(T.TestCase):
+class CLogTestBase(object):
     SIMPLE_FORMAT="%(message)s"
     STREAM_NAME='unit_test'
 
-    @T.setup
+    @pytest.fixture(autouse=True)
     def _create_logger(self):
         self.logger = MockLogger()
         self.handler = CLogHandler(stream=self.STREAM_NAME, logger=self.logger)
@@ -118,24 +119,24 @@ class CLogHandlerTest(CLogTestBase):
             raise MyError("foobar")
         except MyError:
             self.log_instance.exception("example log message")
-        T.assert_equal(1, len([message for message in self.logger.list_lines(self.STREAM_NAME) if "example log message" in message]))
+        assert 1 == len([message for message in self.logger.list_lines(self.STREAM_NAME) if "example log message" in message])
 
 
 class MiscellaneousCLogMethodsTest(CLogTestBase):
     def test_get_scribed_logger(self):
         log = get_scribed_logger("unit_test_scribed", logging.INFO, fmt=self.SIMPLE_FORMAT, clogger_object=self.logger)
         log.info("This is a test")
-        T.assert_in("This is a test", self.logger.list_lines("unit_test_scribed"))
+        assert "This is a test" in self.logger.list_lines("unit_test_scribed")
         self.logger.clear_lines("unit_test_scribed")
         # test that we don"t double-add
         log = get_scribed_logger("unit_test_scribed", logging.INFO, fmt=self.SIMPLE_FORMAT, clogger_object=self.logger)
         log.info("This is a test")
-        T.assert_equal(1, len([message for message in self.logger.list_lines("unit_test_scribed") if message == "This is a test"]))
+        assert 1 == len([message for message in self.logger.list_lines("unit_test_scribed") if message == "This is a test"])
 
     def test_scribify(self):
-        T.assert_equal(scribify("this is a test"), "this_is_a_test")
-        T.assert_equal(scribify("this\0is a-test\n\n"), "this_is_a-test__")
-        T.assert_equal(scribify(u'int\xe9rna\xe7ionalization'), 'int_rna_ionalization')
+        assert scribify("this is a test") == "this_is_a_test"
+        assert scribify("this\0is a-test\n\n") == "this_is_a-test__"
+        assert scribify(u'int\xe9rna\xe7ionalization') == 'int_rna_ionalization'
 
 
 class TestStdoutLogger(object):
@@ -151,4 +152,4 @@ class TestStdoutLogger(object):
             mock.call('stream1:{0}\n'.format(first_line)),
             mock.call('stream1:{0}\n'.format(second_line))
         ])
-        T.assert_equal(mock_stdout.flush.call_count, 1)
+        assert mock_stdout.flush.call_count == 1

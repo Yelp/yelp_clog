@@ -15,8 +15,8 @@
 import subprocess
 import sys
 
+import pytest
 from staticconf.testing import MockConfiguration
-import testifycompat as T
 
 from clog import config
 
@@ -27,14 +27,10 @@ class BlankObject(object):
 
 class TestConfigure(object):
 
-    @T.setup
+    @pytest.yield_fixture(autouse=True)
     def setup_config(self):
-        self.mock_config = MockConfiguration(namespace=config.namespace)
-        self.mock_config.__enter__()
-
-    @T.teardown
-    def teardown_config(self):
-        self.mock_config.__exit__()
+        with MockConfiguration(namespace=config.namespace) as self.mock_config:
+            yield
 
     def test_clog_enable_stdout_logging_true(self):
         config_data = {
@@ -56,7 +52,7 @@ class TestConfigure(object):
             'scribe_port': '5555',
         }
         config.configure_from_dict(config_data)
-        T.assert_equal(config.scribe_host, config_data['scribe_host'])
+        assert config.scribe_host == config_data['scribe_host']
         assert not config.clog_enable_stdout_logging
 
     def test_configure_from_object(self):
@@ -64,14 +60,14 @@ class TestConfigure(object):
         config_obj.scribe_host = 'example.com',
         config_obj.scribe_port = 5555
         config.configure_from_object(config_obj)
-        T.assert_equal(config.scribe_port, 5555)
+        assert config.scribe_port == 5555
         assert not config.clog_enable_stdout_logging
 
     def test_configure(self):
         config.configure('what', '111', scribe_disable=True)
-        T.assert_equal(config.scribe_port, 111)
-        T.assert_equal(config.scribe_host, 'what')
-        T.assert_equal(config.scribe_disable, True)
+        assert config.scribe_port == 111
+        assert config.scribe_host == 'what'
+        assert config.scribe_disable == True
         assert not config.clog_enable_stdout_logging
 
     def test_configure_from_object_changes_scribe_disable(self):
