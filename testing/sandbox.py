@@ -13,10 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import print_function
-from builtins import range
 import contextlib
 import os
-import random
 import signal
 import socket
 import subprocess
@@ -25,24 +23,34 @@ import textwrap
 import time
 
 
-def find_open_port(max_tries=16):
-    """Find an open port for binding to locally, trying random numbers.
-    Unbinds after finding, so there is a possible race condition.
+def find_open_port():
+    """Bind to an ephemeral port, force it into the TIME_WAIT state, and
+    unbind it.
+
+    This means that further ephemeral port alloctions won't pick this
+    "reserved" port, but subprocesses can still bind to it explicitly, given
+    that they use SO_REUSEADDR.
+
+    By default on linux you have a grace period of 60 seconds to reuse this
+    port.
+
+    To check your own particular value:
+    $ cat /proc/sys/net/ipv4/tcp_fin_timeout
+    60
     """
-    for i in range(max_tries):
-        # choose random port number
-        p = random.randrange(1024, 10000)
+    s = socket.socket()
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(('0.0.0.0', 0))
+    s.listen(0)
 
-        # create socket and try to bind to port
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sockname = s.getsockname()
 
-        try:
-            s.bind(('', p)) # empty string here means INADDR_ANY
-        except socket.error:
-            raise ValueError('Failed to find open port')
+    # these three are necessary just to get the port into a TIME_WAIT state
+    s2 = socket.socket()
+    s2.connect(sockname)
+    s.accept()
 
-        s.close()
-        return p
+    return sockname[1]
 
 
 @contextlib.contextmanager

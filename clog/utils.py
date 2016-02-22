@@ -16,12 +16,20 @@ import bz2
 import gzip
 import re
 
-DISALLOWED_STREAM_CHARACTERS_RE = re.compile(r'[^-_a-zA-Z0-9]')
+from future.utils import text_to_native_str
+
+
+DISALLOWED_STREAM_CHARACTERS_RE = re.compile(u'[^-_a-zA-Z0-9]')
 
 
 def scribify(stream_name):
     """Convert an arbitrary stream name to be appropriate to use as a Scribe category name."""
-    return DISALLOWED_STREAM_CHARACTERS_RE.sub('_', stream_name)
+    # First convert the stream_name to text so we can do string operations
+    if isinstance(stream_name, bytes):
+        stream_name = stream_name.decode('UTF-8')
+    stream_name = DISALLOWED_STREAM_CHARACTERS_RE.sub('_', stream_name)
+    # Now convert into native string for scribe
+    return text_to_native_str(stream_name)
 
 
 def open_compressed_file(filename, mode='r'):
