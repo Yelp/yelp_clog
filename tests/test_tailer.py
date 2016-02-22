@@ -25,8 +25,6 @@ import time
 
 import pytest
 import mock
-from testifycompat import setup_teardown
-from testifycompat import assert_equal
 
 from clog import readers, loggers
 from testing import sandbox
@@ -52,8 +50,7 @@ def wait_on_lines(tailer, num_lines=10, timeout=15, delay=0.1):
 @pytest.mark.acceptance_suite
 class TestStreamTailerAcceptance(object):
 
-
-    @setup_teardown
+    @pytest.yield_fixture(autouse=True)
     def setup_sandbox(self):
         scribe_logdir = tempfile.mkdtemp()
         self.stream = TEST_STREAM_PREFIX + get_nonce_str(8)
@@ -87,7 +84,7 @@ class TestStreamTailerAcceptance(object):
 
         encoded_lines = [line.encode('utf8') for line in lines]
         result = wait_on_lines(self.tailer, read_lines)
-        assert_equal(result, encoded_lines[:read_lines])
+        assert result == encoded_lines[:read_lines]
 
     def test_unicode(self):
         eszett_str = get_nonce_str() + " " + u'\xdf'
@@ -99,7 +96,7 @@ class TestStreamTailerAcceptance(object):
         eszett_str_utf8 = eszett_str.encode('utf-8')
 
         lines = wait_on_lines(self.tailer, 1)
-        assert_equal(lines, [eszett_str_utf8])
+        assert lines == [eszett_str_utf8]
 
     def test_tail_lines(self):
         tailer = readers.StreamTailer(

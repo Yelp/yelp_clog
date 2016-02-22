@@ -18,7 +18,6 @@ import tempfile
 import mock
 import pytest
 import simplejson as json
-from testifycompat import setup_teardown
 
 from clog.loggers import LogLineIsTooLongError
 from clog.loggers import MAX_LINE_SIZE_IN_BYTES
@@ -35,7 +34,7 @@ from testing.util import get_log_path
 @pytest.mark.acceptance_suite
 class TestCLogScribeLoggerLineSize(object):
 
-    @setup_teardown
+    @pytest.yield_fixture(autouse=True)
     def setup_sandbox(self):
         self.scribe_logdir = tempfile.mkdtemp()
         self.stream = 'foo'

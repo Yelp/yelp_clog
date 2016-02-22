@@ -15,8 +15,8 @@
 from contextlib import contextmanager
 
 import mock
+import pytest
 import staticconf.testing
-import testifycompat as T
 from thriftpy.transport.socket import TSocket
 
 from clog import config
@@ -30,14 +30,12 @@ RETRY = 100
 
 class TestScribeLoggerTimeout(object):
 
-    @T.setup
+    @pytest.yield_fixture(autouse=True)
     def setup_config(self):
-        self.mock_config = staticconf.testing.MockConfiguration(namespace=config.namespace)
-        self.mock_config.__enter__()
-
-    @T.teardown
-    def teardown_config(self):
-        self.mock_config.__exit__()
+        with staticconf.testing.MockConfiguration(
+            namespace=config.namespace,
+        ) as self.mock_config:
+            yield
 
     @contextmanager
     def construct_scribelogger_with_mocked_tsocket(self, timeout=None):

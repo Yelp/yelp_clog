@@ -16,7 +16,7 @@ import shutil
 import tempfile
 
 import mock
-from testifycompat import setup_teardown
+import pytest
 
 from clog.loggers import ScribeLogger
 from testing.sandbox import find_open_port
@@ -26,7 +26,7 @@ from testing.util import get_log_path
 
 class TestCLogScribeReportStatus(object):
 
-    @setup_teardown
+    @pytest.yield_fixture(autouse=True)
     def setup_sandbox(self):
         self.scribe_logdir = tempfile.mkdtemp()
         self.stream = 'foo'
