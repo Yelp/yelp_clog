@@ -3,6 +3,12 @@
 Release Notes
 =============
 
+2.4.2
+-----
+
+* Improvements to testing.
+* Fix ``scribify`` function under Python 3.
+
 2.4.1
 -----
 * Remove the thriftpy hard-pinning. Compatible now with thriftpy 0.1+ and 0.2+.
