@@ -109,7 +109,7 @@ class CLogTestBase(object):
         self.log_instance.handlers = [self.handler]
 
 
-class CLogHandlerTest(CLogTestBase):
+class TestCLogHandler(CLogTestBase):
 
     def test_handler_preserves_exceptions(self):
         """Test exception preservation a la 18848"""
@@ -122,7 +122,7 @@ class CLogHandlerTest(CLogTestBase):
         assert 1 == len([message for message in self.logger.list_lines(self.STREAM_NAME) if "example log message" in message])
 
 
-class MiscellaneousCLogMethodsTest(CLogTestBase):
+class TestMiscellaneousCLogMethods(CLogTestBase):
     def test_get_scribed_logger(self):
         log = get_scribed_logger("unit_test_scribed", logging.INFO, fmt=self.SIMPLE_FORMAT, clogger_object=self.logger)
         log.info("This is a test")
@@ -134,9 +134,11 @@ class MiscellaneousCLogMethodsTest(CLogTestBase):
         assert 1 == len([message for message in self.logger.list_lines("unit_test_scribed") if message == "This is a test"])
 
     def test_scribify(self):
-        assert scribify("this is a test") == "this_is_a_test"
-        assert scribify("this\0is a-test\n\n") == "this_is_a-test__"
-        assert scribify(u'int\xe9rna\xe7ionalization') == 'int_rna_ionalization'
+        # The rhs is intentionally native strings
+        assert scribify(b'stream_service_errors') == str('stream_service_errors')
+        assert scribify("this is a test") == str('this_is_a_test')
+        assert scribify("this\0is a-test\n\n") == str('this_is_a-test__')
+        assert scribify(u'int\xe9rna\xe7ionalization') == str('int_rna_ionalization')
 
 
 class TestStdoutLogger(object):
