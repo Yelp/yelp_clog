@@ -91,6 +91,19 @@ class TestGZipFileLogger(object):
             content = self._open_and_remove(log_filename)
             assert content == complete_line
 
+    def test_cant_open_stream(self, capsys):
+        log_dir = os.path.join(self.log_dir, 'non_existent_directory')
+        with staticconf.testing.MockConfiguration(log_dir=log_dir, namespace='clog'):
+            logger = GZipFileLogger()
+            stream = 'first'
+            with pytest.raises(IOError):
+                logger.log_line(stream, first_line)
+
+            stdout, stderr = capsys.readouterr()
+            assert stderr == 'Unable to open file for stream first in directory {0}\n'.format(
+                log_dir
+            )
+
 
 class MyError(Exception):
     pass
