@@ -3,6 +3,11 @@
 Release Notes
 =============
 
+2.4.3
+-----
+
+* Fix tail/nc process leaks during testing.
+
 2.4.2
 -----
 
