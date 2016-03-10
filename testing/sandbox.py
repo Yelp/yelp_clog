@@ -138,14 +138,17 @@ def tailer_sandbox(port, log_path):
     with open(log_path, 'a+'):
         pass
 
-    cmd = 'tail -F %(filename)s | nc -l -k -p %(port)s' % (
-            dict(port=port, filename=log_path))
+    cmd = (
+        'dumb-init', 'bash', '-c',
+        'tail -F {filename} | nc -l -k -p {port}'.format(
+            filename=log_path, port=port,
+        )
+    )
 
     try:
-        proc = subprocess.Popen(cmd,
-                                shell=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
         time.sleep(1)
         yield
     finally:
