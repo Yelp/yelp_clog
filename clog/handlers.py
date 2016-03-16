@@ -64,7 +64,7 @@ class ScribeHandler(logging.Handler):
 
         import clog.handlers, logging
         log = logging.getLogger(name)
-        log.addHandler(clog.handlers.ScribeHandler('localhost', 3600, 10))
+        log.addHandler(clog.handlers.ScribeHandler('localhost', 3600, 'stream', retry_interval=3))
 
 
     :param host: hostname of scribe server
