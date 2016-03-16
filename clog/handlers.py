@@ -70,9 +70,10 @@ class ScribeHandler(logging.Handler):
     :param host: hostname of scribe server
     :param port: port number of scribe server
     :param stream: name of the scribe stream logs will be sent to
+    :param retry_interval: default 0, number of seconds to wait between retries
     """
 
-    def __init__(self, host, port, stream, retry_interval=None):
+    def __init__(self, host, port, stream, retry_interval=0):
         logging.Handler.__init__(self)
         self.stream = stream
         self.logger = ScribeLogger(host, port, retry_interval)
