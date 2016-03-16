@@ -31,6 +31,7 @@ class TestScribeHandler(object):
     def test_init(self):
         assert self.handler.stream == 'test_stream'
         assert self.handler.logger.__class__ == loggers.ScribeLogger
+        assert self.handler.logger.retry_interval is not None
 
     def test_emit_exception(self):
         self.handler.logger.log_line = mock.Mock()
