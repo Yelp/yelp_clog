@@ -3,6 +3,11 @@
 Release Notes
 =============
 
+2.4.4
+-----
+
+* Fix ``ScribeHandler`` under Python 3.
+
 2.4.3
 -----
 
