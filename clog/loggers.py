@@ -34,8 +34,6 @@ import simplejson as json
 import pkg_resources
 
 import thriftpy
-from builtins import object
-from builtins import str
 
 
 from clog import config

@@ -42,7 +42,6 @@ from a server.
 """
 
 from __future__ import absolute_import
-from builtins import map
 
 from clog.loggers import ScribeLogger, ScribeIsNotForkSafeError
 from clog.global_state import log_line, reset_default_loggers

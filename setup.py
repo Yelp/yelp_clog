@@ -26,9 +26,9 @@ setup(
     },
     install_requires=[
         'boto>=2.0.0',
-        'future>=0.14.0',
         'thriftpy',
         'PyStaticConfiguration >= 0.8',
         'simplejson',
+        'six>=1.4.0',
     ]
 )

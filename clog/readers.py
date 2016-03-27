@@ -16,9 +16,6 @@
 Classes which read log data from scribe.
 """
 from __future__ import print_function
-from builtins import object
-from future import standard_library
-standard_library.install_aliases()
 
 from clog.scribe_net import ScribeS3, ScribeReader
 
