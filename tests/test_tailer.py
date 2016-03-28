@@ -12,9 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from builtins import range
-from builtins import str
-
 import codecs
 import itertools
 import os
@@ -25,6 +22,7 @@ import time
 
 import pytest
 import mock
+import six
 
 from clog import readers, loggers
 from testing import sandbox
@@ -88,7 +86,7 @@ class TestStreamTailerAcceptance(object):
 
     def test_unicode(self):
         eszett_str = get_nonce_str() + " " + u'\xdf'
-        assert isinstance(eszett_str, str)
+        assert isinstance(eszett_str, six.text_type)
 
         for _ in range(10):
             self.logger.log_line(self.stream, eszett_str)

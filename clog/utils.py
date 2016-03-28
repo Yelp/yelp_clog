@@ -16,7 +16,15 @@ import bz2
 import gzip
 import re
 
-from future.utils import text_to_native_str
+import six
+
+
+if six.PY3:  # pragma: no cover (PY3)
+    def text_to_native_str(s):
+        return s
+else:  # pragma: no cover (PY2)
+    def text_to_native_str(s):
+        return s.encode('UTF-8')
 
 
 DISALLOWED_STREAM_CHARACTERS_RE = re.compile(u'[^-_a-zA-Z0-9]')
