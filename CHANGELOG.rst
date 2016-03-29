@@ -3,6 +3,11 @@
 Release Notes
 =============
 
+2.5.0
+-----
+
+* Use six instead of future
+
 2.4.4
 -----
 
