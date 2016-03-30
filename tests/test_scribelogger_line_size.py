@@ -89,7 +89,7 @@ class TestCLogScribeLoggerLineSize(object):
         # we actually are able to log a 50 meg message to a real scribe server
         test_str = '0' * MAX_LINE_SIZE_IN_BYTES
         self.logger.log_line(self.stream, test_str)
-        expected = test_str.encode('utf-8')
+        expected = test_str.encode('UTF-8')
         wait_on_log_data(self.log_path, expected + b'\n')
 
     @mock.patch('traceback.format_stack')
@@ -110,6 +110,6 @@ class TestCLogScribeLoggerLineSize(object):
         origin_info['stream'] = self.stream
         origin_info['line_size'] = len(line)
         origin_info['traceback'] = ''.join(mock_traceback)
-        origin_info_line = json.dumps(origin_info).encode('utf-8')
+        origin_info_line = json.dumps(origin_info).encode('UTF-8')
         call_2 = mock.call(WHO_CLOG_LARGE_LINE_STREAM, origin_info_line)
         mock_log_line_no_size_limit.assert_has_calls([call_1, call_2])
