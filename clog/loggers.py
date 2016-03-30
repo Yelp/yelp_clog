@@ -31,6 +31,7 @@ import time
 import traceback
 
 import simplejson as json
+import six
 import pkg_resources
 
 import thriftpy
@@ -130,7 +131,7 @@ class ScribeLogger(object):
     def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None):
         # set up thrift and scribe objects
         timeout = logging_timeout if logging_timeout is not None else config.scribe_logging_timeout
-        self.socket = thriftpy.transport.socket.TSocket(str(host), int(port))
+        self.socket = thriftpy.transport.socket.TSocket(six.text_type(host), int(port))
         if timeout:
             self.socket.set_timeout(timeout)
 
@@ -183,7 +184,7 @@ class ScribeLogger(object):
                         self.report_status(
                             True,
                             'yelp_lib.clog failed to log to scribe server with '
-                            ' exception: %s(%s)' % (type(e), str(e))
+                            ' exception: %s(%s)' % (type(e), six.text_type(e))
                         )
                     finally:
                         self.close()
@@ -199,8 +200,8 @@ class ScribeLogger(object):
            will be recorded at WHO_CLOG_LARGE_LINE_STREAM (in json format).
         """
         # log unicodes as their utf-8 encoded representation
-        if isinstance(line, str):
-            line = line.encode('utf-8')
+        if isinstance(line, six.text_type):
+            line = line.encode('UTF-8')
 
         # check log line size
         if len(line) <= WARNING_LINE_SIZE_IN_BYTES:
@@ -213,7 +214,7 @@ class ScribeLogger(object):
             origin_info['stream'] = stream
             origin_info['line_size'] = len(line)
             origin_info['traceback'] = ''.join(traceback.format_stack())
-            log_line = json.dumps(origin_info).encode('utf-8')
+            log_line = json.dumps(origin_info).encode('UTF-8')
             self._log_line_no_size_limit(WHO_CLOG_LARGE_LINE_STREAM, log_line)
             self.report_status(
                 False,
@@ -253,10 +254,9 @@ class FileLogger(object):
                 print("Unable to open file for stream %s" % (stream,), file=sys.stderr)
                 raise
 
-        if isinstance(line, str):
-            self.stream_files[stream].write(line.encode('utf-8') + b'\n')
-        else:
-            self.stream_files[stream].write(line + b'\n')
+        if isinstance(line, six.text_type):
+            line = line.encode('UTF-8')
+        self.stream_files[stream].write(line + b'\n')
 
     def close(self):
         for name in self.stream_files:

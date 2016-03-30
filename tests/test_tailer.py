@@ -91,7 +91,7 @@ class TestStreamTailerAcceptance(object):
         for _ in range(10):
             self.logger.log_line(self.stream, eszett_str)
 
-        eszett_str_utf8 = eszett_str.encode('utf-8')
+        eszett_str_utf8 = eszett_str.encode('UTF-8')
 
         lines = wait_on_lines(self.tailer, 1)
         assert lines == [eszett_str_utf8]

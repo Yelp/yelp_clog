@@ -62,7 +62,7 @@ def scribed_sandbox(port, log_path):
     :returns: a contextmanager which yiels the subprocess
     """
 
-    config = textwrap.dedent("""
+    config = textwrap.dedent("""\
         port={port}
         <store>
         category=default
@@ -77,10 +77,11 @@ def scribed_sandbox(port, log_path):
     conf_file.flush()
 
     try:
-        proc = subprocess.Popen(['scribed', '-c', conf_file.name],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
+        proc = subprocess.Popen(
+            ('scribed', '-c', conf_file.name),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         time.sleep(1)
         yield
     finally:
@@ -89,21 +90,24 @@ def scribed_sandbox(port, log_path):
         proc.wait()
 
 
-def wait_on_condition(func, exc_string, timeout=1, delay=0.1):
+def wait_on_condition(func, timeout, delay=0.1):
     """Wait until a func returns true or there is a timeout.
 
-    :param func: a callable which is called to test a condition
-    :param exc_string: the error message to raise if timeout is hit
+    :param func: a callable which raises AssertionError until it passes
     :param timeout: max seconds to wait for data
     :param delay: seconds to wait between calling :func:`func`
     """
     end_time = time.time() + timeout
-    while time.time() < end_time:
-        if func():
+    while True:
+        try:
+            ret = func()
+            if ret is not None:
+                raise ValueError(ret)
             return
+        except AssertionError:
+            if time.time() > end_time:
+                raise
         time.sleep(delay)
-
-    raise ValueError(exc_string)
 
 
 def wait_on_log_data(file_path, expected):
@@ -112,17 +116,14 @@ def wait_on_log_data(file_path, expected):
 
     :param file_path: path to the log file
     """
-    def condition():
+    def check_log_file_contents():
         try:
             with open(file_path, 'rb') as log_file:
-                if log_file.read() == expected:
-                    return True
+                assert expected in log_file.read()
         except IOError:
-            return False
+            raise AssertionError('{0} does not exist!'.format(file_path))
 
-    wait_on_condition(condition,
-                      "%s did not contain: %r" % (file_path, expected),
-                      timeout=3)
+    wait_on_condition(check_log_file_contents, timeout=3)
 
 
 @contextlib.contextmanager

@@ -17,7 +17,7 @@ import os
 
 def create_test_line(extra_size=0):
     line = 'test_line' + 'x' * extra_size
-    return line.encode('utf-8')
+    return line.encode('UTF-8')
 
 
 def get_log_path(logdir, category):

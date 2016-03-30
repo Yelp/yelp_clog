@@ -68,7 +68,11 @@ class TestCLogAcceptance(object):
             logger = self.create_logger()
             logger.log_line('foo', '1')
             logger.log_line('foo', '2')
-            wait_on_log_data(get_log_path(self.scribe_logdir, 'foo'), b'1\n2\n')
+            logger.log_line('foo', u'☃')
+            wait_on_log_data(
+                get_log_path(self.scribe_logdir, 'foo'),
+                u'1\n2\n☃\n'.encode('UTF-8'),
+            )
 
         # make sure we haven't logged any errors
         assert not any(is_error for (is_error, msg) in self.status_reports)
@@ -85,7 +89,10 @@ class TestCLogAcceptance(object):
         with scribed_sandbox(self.scribe_port, self.scribe_logdir):
             logger.log_line('foo', '3')
             logger.log_line('foo', '4')
-            wait_on_log_data(get_log_path(self.scribe_logdir, 'foo'), b'1\n2\n3\n4\n')
+            wait_on_log_data(
+                get_log_path(self.scribe_logdir, 'foo'),
+                u'1\n2\n☃\n3\n4\n'.encode('UTF-8'),
+            )
 
     def test_init_while_down(self):
         logger = self.create_logger()
