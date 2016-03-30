@@ -3,6 +3,11 @@
 Release Notes
 =============
 
+2.5.1
+-----
+
+* Fix use of unicode
+
 2.5.0
 -----
 
