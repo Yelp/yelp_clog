@@ -251,7 +251,13 @@ class FileLogger(object):
                 # open file in log directory with name STREAM.log, in unbuffered mode
                 self.stream_files[stream] = self._create_file(stream)
             except IOError:
-                print("Unable to open file for stream %s" % (stream,), file=sys.stderr)
+                print(
+                    "Unable to open file for stream {stream} in directory {directory}".format(
+                        stream=stream,
+                        directory=config.log_dir,
+                    ),
+                    file=sys.stderr,
+                )
                 raise
 
         if isinstance(line, six.text_type):
