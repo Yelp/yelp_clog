@@ -21,14 +21,21 @@ setup(
     author='Yelp Infra Team',
     author_email='infra@yelp.com',
     packages=['clog'],
-    package_data={
-        'clog': ['fb303.thrift', 'scribe.thrift'],
-    },
+    package_data={'clog': ['fb303.thrift', 'scribe.thrift']},
     install_requires=[
         'boto>=2.0.0',
         'thriftpy',
         'PyStaticConfiguration >= 0.8',
         'simplejson',
         'six>=1.4.0',
-    ]
+    ],
+    classifiers=[
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: Implementation :: CPython',
+    ],
 )
