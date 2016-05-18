@@ -8,7 +8,7 @@ yelp_clog - Python package for sending things to scribe
 Documentation
 -------------
 
-Read the documentation at [Read the Docs](http://yelp_clog.readthedocs.org/en/latest/).
+Read the documentation at [Read the Docs](http://yelp-clog.readthedocs.io/).
 
 
 License
