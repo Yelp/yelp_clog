@@ -2,6 +2,7 @@ build/
 *.pyc
 *.swp
 dist/
+.cache
 .idea
 .tox
 yelp_clog.egg-info/

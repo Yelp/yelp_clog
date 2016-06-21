@@ -269,7 +269,7 @@ class FileLogger(object):
             self.stream_files[name].close()
 
     def _create_file(self, stream):
-        return open(os.path.join(config.log_dir, stream + '.log'), 'a', 0)
+        return open(os.path.join(config.log_dir, stream + '.log'), 'ab', 0)
 
 
 class GZipFileLogger(FileLogger):
