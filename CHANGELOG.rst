@@ -2,6 +2,10 @@
 
 Release Notes
 =============
+2.5.2
+-----
+
+* Fix FileLogger when using python3
 
 2.5.1
 -----
