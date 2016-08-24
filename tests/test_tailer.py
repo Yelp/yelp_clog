@@ -108,6 +108,45 @@ class TestStreamTailerAcceptance(object):
                 lines=2)
         assert tailer._stream == self.stream + ' 2'
 
+    def test_tail_lines_with_region(self):
+        tailer = readers.StreamTailer(
+                self.stream,
+                add_newlines=False,
+                automagic_recovery=False,
+                timeout=0.2,
+                host='localhost',
+                port=1234,
+                use_kafka=True,
+                lines=2,
+                region='regionA')
+        assert tailer._stream == self.stream + ' 2 region=regionA'
+
+    def test_tail_lines_with_superregion(self):
+        tailer = readers.StreamTailer(
+                self.stream,
+                add_newlines=False,
+                automagic_recovery=False,
+                timeout=0.2,
+                host='localhost',
+                port=1234,
+                use_kafka=True,
+                lines=2,
+                superregion='superregionB')
+        assert tailer._stream == self.stream + ' 2 superregion=superregionB'
+
+    def test_tail_lines_with_both_region_and_superregion(self):
+        tailer = readers.StreamTailer(
+                self.stream,
+                add_newlines=False,
+                automagic_recovery=False,
+                timeout=0.2,
+                host='localhost',
+                port=1234,
+                use_kafka=True,
+                lines=2,
+                region='regionA',
+                superregion='superregionB')
+        assert tailer._stream == self.stream + ' 2 region=regionA'
 
 def test_find_tail_host():
     assert readers.find_tail_host('fakehost') == 'fakehost'
