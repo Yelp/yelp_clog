@@ -226,6 +226,10 @@ class StreamTailer(object):
     :type  host: string
     :param port: the port to connect to
     :type  port:
+    :param region: log source region, override superregion
+    :type  region: string
+    :param superregion: log source super region
+    :type  superregion: string
     :param bufsize: the number of bytes to buffer
     :param automagic_recovery: continue to retry connection forever
     :type  automagic_recovery: bool
@@ -251,6 +255,8 @@ class StreamTailer(object):
                  stream,
                  host=None,
                  port=None,
+                 region=None,
+                 superregion=None,
                  bufsize=4096,
                  automagic_recovery=True,
                  add_newlines=True,
@@ -270,6 +276,8 @@ class StreamTailer(object):
             self.host = host
 
         self.port = port
+        self.region = region
+        self.superregion = superregion
         self.bufsize = bufsize
         self._stream = stream
         self._automagic_recovery = automagic_recovery
@@ -284,6 +292,10 @@ class StreamTailer(object):
                 raise Exception("Last n lines can be only used with new kafka tailer")
             self._stream = stream + " " + str(lines)
             self._automagic_recovery = False
+        if self.region:
+            self._stream += " region=%s" % self.region
+        elif self.superregion:
+            self._stream += " superregion=%s" % self.superregion
         signal.signal(signal.SIGTERM, self.handle_sigterm)
 
     def handle_sigterm(self, signum, frame):
