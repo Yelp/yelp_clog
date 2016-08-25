@@ -8,14 +8,14 @@ production:
 tests: test
 
 test:
-	  tox
+	  tox2
 
 coverage:
-	  tox -e cover
+	  tox2 -e cover
 
 docs:
 	echo $(PWD)
-	tox -e docs
+	tox2 -e docs
 
 clean:
 	make -C docs clean
