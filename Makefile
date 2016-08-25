@@ -3,19 +3,19 @@
 all: production
 
 production:
-	  @true
+	@true
 
 tests: test
 
 test:
-	  tox2
+	tox
 
 coverage:
-	  tox2 -e cover
+	tox -e cover
 
 docs:
 	echo $(PWD)
-	tox2 -e docs
+	tox -e docs
 
 clean:
 	make -C docs clean
