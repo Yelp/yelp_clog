@@ -3,15 +3,15 @@
 all: production
 
 production:
-	  @true
+	@true
 
 tests: test
 
 test:
-	  tox
+	tox
 
 coverage:
-	  tox -e cover
+	tox -e cover
 
 docs:
 	echo $(PWD)
