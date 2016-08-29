@@ -108,7 +108,7 @@ class TestStreamTailerAcceptance(object):
                 lines=2)
         assert tailer._stream == self.stream + ' 2'
 
-    def test_tail_lines_with_region(self):
+    def test_tail_lines_with_one_option(self):
         tailer = readers.StreamTailer(
                 self.stream,
                 add_newlines=False,
@@ -118,10 +118,10 @@ class TestStreamTailerAcceptance(object):
                 port=1234,
                 use_kafka=True,
                 lines=2,
-                region='regionA')
-        assert tailer._stream == self.stream + ' 2 region=regionA'
+                protocol_opts={'opt1': 'value1'})
+        assert tailer._stream == self.stream + ' 2 opt1=value1'
 
-    def test_tail_lines_with_superregion(self):
+    def test_tail_lines_with_multiple_options(self):
         tailer = readers.StreamTailer(
                 self.stream,
                 add_newlines=False,
@@ -131,22 +131,10 @@ class TestStreamTailerAcceptance(object):
                 port=1234,
                 use_kafka=True,
                 lines=2,
-                superregion='superregionB')
-        assert tailer._stream == self.stream + ' 2 superregion=superregionB'
-
-    def test_tail_lines_with_both_region_and_superregion(self):
-        tailer = readers.StreamTailer(
-                self.stream,
-                add_newlines=False,
-                automagic_recovery=False,
-                timeout=0.2,
-                host='localhost',
-                port=1234,
-                use_kafka=True,
-                lines=2,
-                region='regionA',
-                superregion='superregionB')
-        assert tailer._stream == self.stream + ' 2 region=regionA'
+                protocol_opts={'opt1': 'value1', 'opt2': 'value2'})
+        assert tailer._stream.startswith(self.stream + ' 2')
+        assert ' opt1=value1' in tailer._stream
+        assert ' opt2=value2' in tailer._stream
 
 def test_find_tail_host():
     assert readers.find_tail_host('fakehost') == 'fakehost'
