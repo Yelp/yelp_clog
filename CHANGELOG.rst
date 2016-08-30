@@ -2,6 +2,12 @@
 
 Release Notes
 =============
+2.6.0
+-----
+
+* Make StreamTailer connection message more flexible
+* Drop py33 and add py35
+
 2.5.2
 -----
 
