@@ -115,6 +115,7 @@ def test_tail_lines_with_options():
     assert conn_msg.endswith('\n')
     assert ' opt1=value1' in conn_msg
     assert ' opt2=value2' in conn_msg
+    assert len(conn_msg) == 32
 
 def test_tail_lines_with_lines_and_options():
     conn_msg = readers.construct_conn_msg(
@@ -125,6 +126,7 @@ def test_tail_lines_with_lines_and_options():
     assert conn_msg.endswith('\n')
     assert ' opt1=value1' in conn_msg
     assert ' opt2=value2' in conn_msg
+    assert len(conn_msg) == 35
 
 def get_settings_side_effect(*args, **kwargs):
     if args[0] == 'DEFAULT_SCRIBE_TAIL_HOST':
