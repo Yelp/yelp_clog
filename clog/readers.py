@@ -239,6 +239,8 @@ class StreamTailer(object):
     :type  timeout: int
     :param reconnect_callback: callback called when reconnecting
     :type  reconnect_callback: function
+    :param protocol_opts: optional protocol parameters
+    :type  protocol_opts: dict
     """
 
     scribe_tail_services = config.clog_namespace.get_list(
@@ -258,7 +260,8 @@ class StreamTailer(object):
                  timeout=None,
                  reconnect_callback=None,
                  use_kafka=config.use_kafka,
-                 lines=None):
+                 lines=None,
+                 protocol_opts=None):
         if host is None or port is None:
             primary_tail_host = random.choice(self.scribe_tail_services)
             host = primary_tail_host['host']
@@ -279,10 +282,11 @@ class StreamTailer(object):
         self._fd = None
         self._running = True
         self._reconnect_callback = reconnect_callback
-        if lines:
+        self._lines = lines
+        self._protocol_opts = protocol_opts
+        if self._lines:
             if not use_kafka:
                 raise Exception("Last n lines can be only used with new kafka tailer")
-            self._stream = stream + " " + str(lines)
             self._automagic_recovery = False
         signal.signal(signal.SIGTERM, self.handle_sigterm)
 
@@ -312,7 +316,7 @@ class StreamTailer(object):
                     self.port,
                     'Failed to connect (stream %r)' % (self._stream,))
         bytes_sent = 0
-        msg = (self._stream + "\n").encode('utf8')
+        msg = construct_conn_msg(self._stream, self._lines, self._protocol_opts).encode('utf8')
         while bytes_sent < len(msg):
             bytes_sent += self._fd.send(msg[bytes_sent:])
 
@@ -401,6 +405,19 @@ class StreamTailer(object):
         towrite = ""
         return NetCLogStreamReader._ContextManager(self, towrite)
 
+def construct_conn_msg(stream, lines=None, protocol_opts=None):
+    """Return a connnection message
+
+    :param stream: stream name
+    :param lines: number of messages to consume
+    :param protocol_opts: optional arguments
+    """
+    connection_msg = stream
+    if lines:
+        connection_msg += ' {0}'.format(lines)
+    if protocol_opts:
+        connection_msg += ''.join([' {0}={1}'.format(k, v) for k, v in protocol_opts.items()])
+    return connection_msg + '\n'
 
 def read_s3_keypair():
     with open("/etc/boto_cfg/scribereader.yaml") as f:

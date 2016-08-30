@@ -96,22 +96,37 @@ class TestStreamTailerAcceptance(object):
         lines = wait_on_lines(self.tailer, 1)
         assert lines == [eszett_str_utf8]
 
-    def test_tail_lines(self):
-        tailer = readers.StreamTailer(
-                self.stream,
-                add_newlines=False,
-                automagic_recovery=False,
-                timeout=0.2,
-                host='localhost',
-                port=1234,
-                use_kafka=True,
-                lines=2)
-        assert tailer._stream == self.stream + ' 2'
-
-
 def test_find_tail_host():
     assert readers.find_tail_host('fakehost') == 'fakehost'
 
+def test_construct_conn_msg_without_lines():
+    conn_msg = readers.construct_conn_msg("streamA")
+    assert conn_msg == 'streamA\n'
+
+def test_construct_conn_msg_with_lines():
+    conn_msg = readers.construct_conn_msg('streamA', lines=2)
+    assert conn_msg == 'streamA 2\n'
+
+def test_tail_lines_with_options():
+    conn_msg = readers.construct_conn_msg(
+            'streamA',
+            protocol_opts={'opt1': 'value1', 'opt2': 'value2'})
+    assert conn_msg.startswith('streamA opt')
+    assert conn_msg.endswith('\n')
+    assert ' opt1=value1' in conn_msg
+    assert ' opt2=value2' in conn_msg
+    assert len(conn_msg) == 32
+
+def test_tail_lines_with_lines_and_options():
+    conn_msg = readers.construct_conn_msg(
+            'streamA',
+            lines=10,
+            protocol_opts={'opt1': 'value1', 'opt2': 'value2'})
+    assert conn_msg.startswith('streamA 10')
+    assert conn_msg.endswith('\n')
+    assert ' opt1=value1' in conn_msg
+    assert ' opt2=value2' in conn_msg
+    assert len(conn_msg) == 35
 
 def get_settings_side_effect(*args, **kwargs):
     if args[0] == 'DEFAULT_SCRIBE_TAIL_HOST':
