@@ -303,7 +303,7 @@ class MockLogger(object):
         self.lines = {}
 
     def log_line(self, stream, line):
-        assert isinstance(line, six.text_type)
+        assert isinstance(line, (bytes, six.string_types))
         self.lines.setdefault(stream, []).append(line)
 
     def clear_lines(self, stream):
