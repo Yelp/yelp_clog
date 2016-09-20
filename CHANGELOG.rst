@@ -2,6 +2,11 @@
 
 Release Notes
 =============
+2.6.1
+-----
+
+* Add type checking to ``MockLogger`` log_line function
+
 2.6.0
 -----
 
