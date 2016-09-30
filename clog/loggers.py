@@ -162,7 +162,7 @@ class ScribeLogger(object):
                 self.connected = True
             except TTransportException:
                 self.last_connect_time = now
-                self.report_status(True, 'yelp_lib.clog failed to connect to scribe server')
+                self.report_status(True, 'yelp_clog failed to connect to scribe server')
 
     def _log_line_no_size_limit(self, stream, line):
         """Log a single line without size limit. It should not include any newline characters.
@@ -183,7 +183,7 @@ class ScribeLogger(object):
                     try:
                         self.report_status(
                             True,
-                            'yelp_lib.clog failed to log to scribe server with '
+                            'yelp_clog failed to log to scribe server with '
                             ' exception: %s(%s)' % (type(e), six.text_type(e))
                         )
                     finally:
