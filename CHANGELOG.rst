@@ -1,7 +1,10 @@
-
-
 Release Notes
 =============
+2.6.2
+-----
+
+* Remove references to yelp_lib
+
 2.6.1
 -----
 
