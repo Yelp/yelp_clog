@@ -1,8 +1,17 @@
 language: python
 python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
-  - "3.4"
-install: "pip install -r requirements.txt"
+- '2.6'
+- '2.7'
+- '3.3'
+- '3.4'
+install: pip install -r requirements.txt
 script: make tests
+deploy:
+  provider: pypi
+  user: yelplabs
+  password:
+    secure: r4p1FkAg5qXoXgfwohM6L+NEMEi3BRckoMOW3ZIG7Nxv7RPRvl0Rg+ALtqufE+sz1V/5+zbe/RVY0Q8Id4f7km57BV3PLiobQyqhZdY3t8TFkgxt8rifvelqyEbVsHNT7ArdiEPjgCthkricIblBsCxPkZ9Z4joaCna/4O5GeWXCaeDJsITBuOwsdV4Sw3ZF28Yr8jcKbMUrF5Z4+N656UZWKbbTJIz9m3RTWwdjbVnvTtxAnp45ms/7EaRvaP8f8lDiBjFJoA2Uz2ssTA5g8eLIZ0WPuYnZYUy+yuWNIKaA0Usxfi+FD9WARvCf2ad1faIANVRrFf0AXqHg4gSS0ByUeLEMIatMyASHjib3stlu6bShn6z+JvKH1F0IDuMMW3jCN1rKQeiSqB8cIdBBPiiCoQVMVi1YK3z72vHhJBYqjrCiSGCC7MOduLtjs+iqHQttpnWhUQXb2fI5FAr3e8yea6kBSyRgURG3KUhEuHcb9vOegLacmoOcZKGf+TxoGQAHlFvrYihh5pcJZLLLRSYSVtfvKB9Lv8VV4V2QY6JFBc9cu9KbErFrjteVNtui79Uqa18q6i/r2Ztc4eWDngtSTyiHju+0c+TrVSaF7nJvrLrrjzdNAj0RGWX5EnHTN+B5+oc4PswomNCOSCWjlj//Gydx/uI4BFwBxcZwIbA=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: Yelp/yelp_clog
