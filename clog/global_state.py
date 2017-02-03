@@ -48,6 +48,10 @@ def check_create_default_loggers():
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
 
+        # In case we don't have any loggers, try to populate loggers on the next call
+        if not loggers:
+            loggers = None
+
 
 def reset_default_loggers():
     """
@@ -75,5 +79,6 @@ def log_line(stream, line):
     :param line: contents of the log message
     """
     check_create_default_loggers()
-    for logger in loggers:
-        logger.log_line(stream, line)
+    if loggers:
+        for logger in loggers:
+            logger.log_line(stream, line)
