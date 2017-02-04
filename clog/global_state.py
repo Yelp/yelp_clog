@@ -26,8 +26,7 @@ def check_create_default_loggers():
     """Set up global loggers, if necessary."""
     global loggers
 
-    # important to specifically compare to None, since empty list means something different
-    if loggers is None:
+    if not loggers:
 
         # initialize list of loggers
         loggers = []
@@ -47,10 +46,6 @@ def check_create_default_loggers():
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
-
-        # In case we don't have any loggers, try to populate loggers on the next call
-        if not loggers:
-            loggers = None
 
 
 def reset_default_loggers():
