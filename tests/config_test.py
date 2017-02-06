@@ -85,3 +85,18 @@ class TestConfigure(object):
         )
         out = proc.communicate()[0].decode('UTF-8')
         assert out == 'True\nFalse\n'
+
+    def test_logging_not_configured(self):
+        proc = subprocess.Popen(
+            (
+                sys.executable, '-c',
+                'import clog\n'
+                'try:\n'
+                '   clog.log_line("foo", "bar")\n'
+                'except Exception as e:\n'
+                '   print(e.__class__.__name__)\n'
+            ),
+            stdout=subprocess.PIPE,
+        )
+        out = proc.communicate()[0].decode('UTF-8')
+        assert out == 'LoggingNotConfiguredException\n'

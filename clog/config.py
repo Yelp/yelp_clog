@@ -108,6 +108,8 @@ use_kafka = clog_namespace.get_bool('use_kafka',
     default=False,
     help='If True, will tail from a stream via a service talking to Kafka')
 
+is_logging_configured = False
+
 
 def configure_from_dict(config_dict):
     """Configure the :mod:`clog` package from a dictionary.
@@ -117,6 +119,9 @@ def configure_from_dict(config_dict):
     staticconf.DictConfiguration(config_dict, namespace=namespace)
     reloader()
 
+    global is_logging_configured
+    is_logging_configured = True
+
 
 def configure_from_object(config_obj):
     """Configure the :mod:`clog` package from an object (or module).
@@ -125,6 +130,9 @@ def configure_from_object(config_obj):
     """
     loader.ObjectConfiguration(config_obj, namespace=namespace)
     reloader()
+
+    global is_logging_configured
+    is_logging_configured = True
 
 
 def configure(scribe_host, scribe_port, **kwargs):
@@ -138,3 +146,6 @@ def configure(scribe_host, scribe_port, **kwargs):
     kwargs['scribe_port'] = scribe_port
     staticconf.DictConfiguration(kwargs, namespace=namespace)
     reloader()
+
+    global is_logging_configured
+    is_logging_configured = True
