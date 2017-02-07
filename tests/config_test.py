@@ -71,7 +71,7 @@ class TestConfigure(object):
         assert not config.clog_enable_stdout_logging
 
     def test_configure_from_object_changes_scribe_disable(self):
-        proc = subprocess.Popen(
+        out = subprocess.check_output(
             (
                 sys.executable, '-c',
                 'import clog.config\n'
@@ -80,14 +80,11 @@ class TestConfigure(object):
                 '    scribe_disable = False\n'
                 'clog.config.configure_from_object(C)\n'
                 'print(clog.config.scribe_disable)\n'
-            ),
-            stdout=subprocess.PIPE,
-        )
-        out = proc.communicate()[0].decode('UTF-8')
+            )).decode('UTF-8')
         assert out == 'True\nFalse\n'
 
     def test_logging_not_configured(self):
-        proc = subprocess.Popen(
+        out = subprocess.check_output(
             (
                 sys.executable, '-c',
                 'import clog\n'
@@ -95,8 +92,5 @@ class TestConfigure(object):
                 '   clog.log_line("foo", "bar")\n'
                 'except Exception as e:\n'
                 '   print(e.__class__.__name__)\n'
-            ),
-            stdout=subprocess.PIPE,
-        )
-        out = proc.communicate()[0].decode('UTF-8')
+            )).decode('UTF-8')
         assert out == 'LoggingNotConfiguredException\n'
