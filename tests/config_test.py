@@ -71,7 +71,7 @@ class TestConfigure(object):
         assert not config.clog_enable_stdout_logging
 
     def test_configure_from_object_changes_scribe_disable(self):
-        proc = subprocess.Popen(
+        out = subprocess.check_output(
             (
                 sys.executable, '-c',
                 'import clog.config\n'
@@ -80,8 +80,66 @@ class TestConfigure(object):
                 '    scribe_disable = False\n'
                 'clog.config.configure_from_object(C)\n'
                 'print(clog.config.scribe_disable)\n'
-            ),
-            stdout=subprocess.PIPE,
-        )
-        out = proc.communicate()[0].decode('UTF-8')
+            )).decode('UTF-8')
         assert out == 'True\nFalse\n'
+
+    def test_logging_not_configured(self):
+        out = subprocess.check_output(
+            (
+                sys.executable, '-c',
+                'import clog\n'
+                'try:\n'
+                '   clog.log_line("foo", "bar")\n'
+                'except Exception as e:\n'
+                '   print(e.__class__.__name__)\n'
+            )).decode('UTF-8')
+        assert out == 'LoggingNotConfiguredException\n'
+
+    def test_logging_configured(self):
+        out = subprocess.check_output(
+            (
+                sys.executable, '-c',
+                'import clog.config\n'
+                'clog.config.configure("example.com", 5555)\n'
+                'try:\n'
+                '   clog.log_line("foo", "bar")\n'
+                'except Exception as e:\n'
+                '   print(e.__class__.__name__)\n'
+                'else:\n'
+                '   print("it worked")\n'
+            )).decode('UTF-8')
+        assert out == 'it worked\n'
+
+    def test_logging_configured_from_dict(self):
+        out = subprocess.check_output(
+            (
+                sys.executable, '-c',
+                'import clog.config\n'
+                'clog.config.configure_from_dict({"scribe_host":"example.com", "scribe_port":5555})\n'
+                'try:\n'
+                '   clog.log_line("foo", "bar")\n'
+                'except Exception as e:\n'
+                '   print(e.__class__.__name__)\n'
+                'else:\n'
+                '   print("it worked")\n'
+            )).decode('UTF-8')
+        assert out == 'it worked\n'
+
+    def test_logging_configured_from_object(self):
+        out = subprocess.check_output(
+            (
+                sys.executable, '-c',
+                'import clog.config\n'
+                'class C(object):\n'
+                '    scribe_disable = False\n'
+                '    scribe_host = "example.com"\n'
+                '    scribe_port = 5555\n'
+                'clog.config.configure_from_object(C)\n'
+                'try:\n'
+                '   clog.log_line("foo", "bar")\n'
+                'except Exception as e:\n'
+                '   print(e.__class__.__name__)\n'
+                'else:\n'
+                '   print("it worked")\n'
+            )).decode('UTF-8')
+        assert out == 'it worked\n'
