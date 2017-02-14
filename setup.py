@@ -16,7 +16,7 @@ from setuptools import setup
 
 setup(
     name='yelp-clog',
-    version='2.6.2',
+    version='2.6.3',
     description='A package which provides logging and reading from scribe.',
     author='Yelp Infra Team',
     author_email='infra@yelp.com',
