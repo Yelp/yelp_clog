@@ -93,21 +93,38 @@ class TestConfigure(object):
                 'except Exception as e:\n'
                 '   print(e.__class__.__name__)\n'
             )).decode('UTF-8')
-        assert out == 'LoggingNotConfiguredException\n'
+        assert out == 'LoggingNotConfiguredError\n'
+
+    def test_logging_configured_through_staticconf_ok(self):
+        out = subprocess.check_output((
+            sys.executable, '-c',
+            'import clog\n'
+            'import staticconf.config\n'
+            'staticconf.DictConfiguration(\n'
+            '    {\n'
+            '        "scribe_host": "localhost", "scribe_port": 5555,\n'
+            '        "scribe_disable": False,\n'
+            '    },\n'
+            '    namespace="clog",\n'
+            ')\n'
+            'staticconf.config.ReloadCallbackChain("clog")()\n'
+            'clog.log_line("foo", "bar")\n'
+            'print("it worked!")\n',
+        )).decode('UTF-8')
+        assert out == 'it worked!\n'
 
     def test_logging_configured(self):
-        out = subprocess.check_output(
-            (
-                sys.executable, '-c',
-                'import clog.config\n'
-                'clog.config.configure("example.com", 5555)\n'
-                'try:\n'
-                '   clog.log_line("foo", "bar")\n'
-                'except Exception as e:\n'
-                '   print(e.__class__.__name__)\n'
-                'else:\n'
-                '   print("it worked")\n'
-            )).decode('UTF-8')
+        out = subprocess.check_output((
+            sys.executable, '-c',
+            'import clog.config\n'
+            'clog.config.configure("example.com", 5555)\n'
+            'try:\n'
+            '   clog.log_line("foo", "bar")\n'
+            'except Exception as e:\n'
+            '   print(e.__class__.__name__)\n'
+            'else:\n'
+            '   print("it worked")\n'
+        )).decode('UTF-8')
         assert out == 'it worked\n'
 
     def test_logging_configured_from_dict(self):
