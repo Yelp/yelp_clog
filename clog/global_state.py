@@ -22,15 +22,12 @@ from clog.loggers import FileLogger, ScribeLogger, StdoutLogger
 # global logger, used by module-level functions
 loggers = None
 
-class LoggingNotConfiguredException(Exception):
+class LoggingNotConfiguredError(Exception):
     pass
 
 def check_create_default_loggers():
     """Set up global loggers, if necessary."""
     global loggers
-
-    if not config.is_logging_configured:
-        raise LoggingNotConfiguredException
 
     # important to specifically compare to None, since empty list means something different
     if loggers is None:
@@ -53,6 +50,9 @@ def check_create_default_loggers():
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
+
+        if not loggers and not config.is_logging_configured:
+            raise LoggingNotConfiguredError
 
 
 def reset_default_loggers():
