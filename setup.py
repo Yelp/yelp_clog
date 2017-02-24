@@ -25,7 +25,7 @@ setup(
     install_requires=[
         'boto>=2.0.0',
         'thriftpy',
-        'PyStaticConfiguration >= 0.8',
+        'PyStaticConfiguration >= 0.10.3',
         'simplejson',
         'six>=1.4.0',
     ],
@@ -36,6 +36,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
 )
