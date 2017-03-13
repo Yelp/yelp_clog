@@ -4,7 +4,6 @@ import logging
 import clog
 import clog.global_state
 import clog.handlers
-import functools
 
 try:
     import cPickle as pickle
@@ -14,10 +13,9 @@ except ImportError:
 
 def _mule_msg(*args, **kwargs):
     mule = kwargs.pop('mule', 1)
-    func = kwargs.pop('func', 'log_line')
     data = pickle.dumps({
         'service': 'uwsgi_mulefunc',
-        'func': func,
+        'func': 'log_line',
         'args': args,
         'kwargs': kwargs,
     })
@@ -34,21 +32,21 @@ class UwsgiHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            _mule_msg(self.stream, msg, mule=self.mule, func='log_line')
+            _mule_msg(self.stream, msg, mule=self.mule)
         except:
             self.handleError(record)
 
 
-def uwsgi_patch_global_state(func='log_line', mule=1):
+def uwsgi_patch_global_state(mule=1):
     map(
-        lambda x: setattr(x, func, functools.partial(_mule_msg, func=func, mule=mule)),
+        lambda x: setattr(x, 'log_line', _mule_msg),
         (clog, clog.global_state)
     )
 
 # TODO: Patch upstream uwsgi to return success on the pipe write so
 # we can optionally default to sync log_line
 def uwsgi_log_line(stream, line, mule=1):
-    _mule_msg(stream, line, mule=mule, func='log_line')
+    _mule_msg(stream, line, mule=mule)
 
 
 # Couple setup tasks at import:
