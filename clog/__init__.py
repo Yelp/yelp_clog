@@ -46,11 +46,11 @@ from __future__ import absolute_import
 from clog.loggers import ScribeLogger, ScribeIsNotForkSafeError
 from clog.global_state import log_line, reset_default_loggers
 
+uwsgi_plugin_enabled = False
 try:
     from clog.uwsgi_plugin import uwsgi_patch_global_state, uwsgi_log_line
     uwsgi_plugin_enabled = True
 except ImportError:
-    uwsgi_plugin_enabled = False
     pass
 
 _pyflakes_ignore = [
@@ -59,4 +59,5 @@ _pyflakes_ignore = [
     log_line,
     reset_default_loggers,
     uwsgi_patch_global_state,
+    uwsgi_log_line,
 ]
