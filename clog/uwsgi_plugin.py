@@ -37,16 +37,17 @@ class UwsgiHandler(logging.Handler):
             self.handleError(record)
 
 
-def uwsgi_patch_global_state(mule=1):
-    map(
-        lambda x: setattr(x, 'log_line', _mule_msg),
-        (clog, clog.global_state)
-    )
-
 # TODO: Patch upstream uwsgi to return success on the pipe write so
 # we can optionally default to sync log_line
 def uwsgi_log_line(stream, line, mule=1):
     _mule_msg(stream, line, mule=mule)
+
+
+def uwsgi_patch_global_state():
+    map(
+        lambda x: setattr(x, 'log_line', uwsgi_log_line),
+        (clog, clog.global_state)
+    )
 
 
 # Couple setup tasks at import:
