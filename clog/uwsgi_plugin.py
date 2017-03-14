@@ -33,6 +33,8 @@ class UwsgiHandler(logging.Handler):
         try:
             msg = self.format(record)
             _mule_msg(self.stream, msg, mule=self.mule)
+        except Exception:
+            raise
         except:
             self.handleError(record)
 
