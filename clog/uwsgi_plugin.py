@@ -4,11 +4,7 @@ import logging
 import clog
 import clog.global_state
 import clog.handlers
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import six.moves.cPickle as pickle
 
 
 def _mule_msg(*args, **kwargs):
