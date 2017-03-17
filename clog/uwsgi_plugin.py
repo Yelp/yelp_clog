@@ -15,7 +15,11 @@ def _mule_msg(*args, **kwargs):
         'args': args,
         'kwargs': kwargs,
     })
-    uwsgi.mule_msg(data, mule)
+    # Unfortunately this check has to come after the pickling
+    # unless we just want to make a conservative guess
+    if len(data) > max_recv_size:
+        return False
+    return uwsgi.mule_msg(data, mule)
 
 
 class UwsgiHandler(logging.Handler):
@@ -35,10 +39,11 @@ class UwsgiHandler(logging.Handler):
             self.handleError(record)
 
 
-# TODO: Patch upstream uwsgi to return success on the pipe write so
-# we can optionally default to sync log_line
 def uwsgi_log_line(stream, line, mule=1):
-    _mule_msg(stream, line, mule=mule)
+    # Explicit 'False' check - see https://github.com/unbit/uwsgi/pull/1482
+    # We don't want to double-emit on 'None' response if we have older uwsgi
+    if _mule_msg(stream, line, mule=mule) == False:
+        _orig_log_line(stream, line)
 
 
 def uwsgi_patch_global_state():
@@ -51,6 +56,11 @@ def uwsgi_patch_global_state():
 # Couple setup tasks at import:
 # 1. Register 'log_line' in all mules for dispatch handling on the mule side
 # 2. Insert 'UwsgiHandler' into the clog.handlers module for seamless usage
+# 3. Store reference to the original global_state.log_line for fallback
+# 4. Fetch mule_msg_recv_size to calculate send limit
 
 uwsgidecorators.mule_functions['log_line'] = clog.global_state.log_line
 setattr(clog.handlers, 'UwsgiHandler', UwsgiHandler)
+_orig_log_line = clog.global_state.log_line
+# See https://github.com/unbit/uwsgi/pull/1487
+max_recv_size = getattr(uwsgi, 'mule_msg_recv_size', lambda: 65536)()
