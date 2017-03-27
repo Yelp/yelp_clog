@@ -58,6 +58,8 @@ _pyflakes_ignore = [
     ScribeIsNotForkSafeError,
     log_line,
     reset_default_loggers,
+] + ([
     uwsgi_patch_global_state,
     uwsgi_log_line,
-]
+] if uwsgi_plugin_enabled else [])
+
