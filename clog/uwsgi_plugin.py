@@ -77,6 +77,11 @@ def uwsgi_patch_global_state():
 
 setattr(clog.handlers, 'UwsgiHandler', UwsgiHandler)
 _orig_log_line = clog.global_state.log_line
+# It's vital that no other module override this hook after we have done so.
+# This is an unfortunate consequence of the uwsgi_python plugin but the
+# hook implementation isn't naturally exstensible - we're managing here by
+# making assumptions about the environment, one of which is that uwsgidecorators
+# is the only other module installing to this hook.
 uwsgi.mule_msg_hook = _plugin_mule_msg_shim
 # See https://github.com/unbit/uwsgi/pull/1487
 max_recv_size = getattr(uwsgi, 'mule_msg_recv_size', lambda: 65536)()
