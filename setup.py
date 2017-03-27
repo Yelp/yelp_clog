@@ -30,7 +30,7 @@ setup(
         'six>=1.4.0',
     ],
     extras_require={
-        'uwsgi_offload': ['uWSGI>=2.0.14.0.post3'],
+        'uwsgi': ['uWSGI>=2.0.14'],
     },
     classifiers=[
         'Programming Language :: Python :: 2',
