@@ -29,6 +29,9 @@ setup(
         'simplejson',
         'six>=1.4.0',
     ],
+    extras_require={
+        'uwsgi_offload': ['uWSGI>=2.0.14.0.post3'],
+    },
     classifiers=[
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
