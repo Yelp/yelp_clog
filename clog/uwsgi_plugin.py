@@ -6,10 +6,11 @@ import clog.handlers
 import marshal
 from uwsgidecorators import mule_msg_dispatcher
 
+MSG_HEADER = b'clog'
 
 def _mule_msg(*args, **kwargs):
     mule = kwargs.pop('mule', None)
-    data = marshal.dumps((args, kwargs))
+    data = MSG_HEADER + marshal.dumps((args, kwargs))
     # Unfortunately this check has to come after the marshalling
     # unless we just want to make a conservative guess
     if len(data) > max_recv_size:
@@ -21,12 +22,11 @@ def _mule_msg(*args, **kwargs):
         return uwsgi.mule_msg(data, mule)
     return uwsgi.mule_msg(data)
 
-
 def _plugin_mule_msg_shim(message):
-    try:
-        args, kwargs = marshal.loads(message)
+    if message[:len(MSG_HEADER)] == MSG_HEADER:
+        args, kwargs = marshal.loads(message[len(MSG_HEADER):])
         return _orig_log_line(*args, **kwargs)
-    except Exception:
+    else:
         return mule_msg_dispatcher(message)
 
 
