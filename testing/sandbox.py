@@ -156,26 +156,3 @@ def tailer_sandbox(port, log_path):
     finally:
         os.kill(proc.pid, signal.SIGTERM)
         proc.wait()
-
-
-def install_fake_uwsgi():
-    # Install a fake uwsgi module into sys.modules
-    # with a few of the used methods defined
-    class uwsgi(object):
-        mule_msg_hook = None
-
-        @staticmethod
-        def mule_msg(message, mule=None):
-            pass
-
-        @staticmethod
-        def mule_msg_recv_size():
-            return 65536
-
-    class uwsgidecorators(object):
-        @staticmethod
-        def mule_msg_dispatcher(message):
-            pass
-
-    sys.modules['uwsgi'] = uwsgi
-    sys.modules['uwsgidecorators'] = uwsgidecorators
