@@ -1,4 +1,5 @@
 import mock
+import os
 import pickle
 import pytest
 import six
@@ -6,8 +7,7 @@ import struct
 import sys
 
 
-@pytest.fixture(scope='module')
-def uwsgi_plugin():
+def install_fake_uwsgi():
 
     class uwsgi(object):
         mule_msg_hook = None
@@ -27,76 +27,130 @@ def uwsgi_plugin():
 
     sys.modules['uwsgi'] = uwsgi
     sys.modules['uwsgidecorators'] = uwsgidecorators
-    import clog.uwsgi_plugin
 
-    yield clog.uwsgi_plugin
 
-    sys.modules.pop('uwsgi')
-    sys.modules.pop('uwsgidecorators')
-    sys.modules.pop('clog.uwsgi_plugin')
-    del clog.handlers.UwsgiHandler
+def run(target):
 
-    with pytest.raises(ImportError):
+    def _waitpid_for_status(pid):
+        return (os.waitpid(pid, 0)[1] & 0xFF00) >> 8
+
+    pid = os.fork()
+    if not pid:
+        install_fake_uwsgi()
         import clog.uwsgi_plugin
+        try:
+            target(clog.uwsgi_plugin)
+        except Exception:
+            os._exit(1)
+        os._exit(0)
+
+    assert _waitpid_for_status(pid) == 0
 
 
-@pytest.mark.usefixtures('uwsgi_plugin')
 class TestUwsgiPlugin(object):
 
-    def test_uwsgi_handle_valid_msg(self, uwsgi_plugin):
-        message = ('this is a fake stream', 'this is a fake line!')
-        mule_msg_data = uwsgi_plugin._encode_mule_msg(*message)
-        with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
-            with mock.patch.object(uwsgi_plugin, 'mule_msg_dispatcher') as dispatcher:
-                uwsgi_plugin._plugin_mule_msg_shim(mule_msg_data)
-                orig_line.assert_called_with(*map(six.b, message))
-                assert not dispatcher.called
+    def test_baseline(self):
+        def target(uwsgi_plugin):
+            assert False
 
-    def test_uwsgi_handle_invalid_msg_pass_thru(self, uwsgi_plugin):
-        message = ('this is a fake stream', 'this is a fake line!')
-        pickle_data = pickle.dumps(message)
-        with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
-            with mock.patch.object(uwsgi_plugin, 'mule_msg_dispatcher') as dispatcher:
-                uwsgi_plugin._plugin_mule_msg_shim(pickle_data)
-                dispatcher.assert_called_with(pickle_data)
-                assert not orig_line.called
+        with pytest.raises(AssertionError):
+            run(target)
 
-    def test_uwsgi_default_over_max_size(self, uwsgi_plugin):
-        big_string = 's' * 65536
-        assert uwsgi_plugin._mule_msg('blah', big_string) == False
+    def test_uwsgi_handle_valid_msg(self):
+        def target(uwsgi_plugin):
+            message = ('this is a fake stream', 'this is a fake line!')
+            mule_msg_data = uwsgi_plugin._encode_mule_msg(*message)
+            with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
+                with mock.patch.object(uwsgi_plugin, 'mule_msg_dispatcher') as dispatcher:
+                    uwsgi_plugin._plugin_mule_msg_shim(mule_msg_data)
+                    orig_line.assert_called_with(*map(six.b, message))
+                    assert not dispatcher.called
 
-    def test_uwsgi_default_on_failed_mule_msg(self, uwsgi_plugin):
-        with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
-            with mock.patch.object(uwsgi_plugin, '_mule_msg', return_value=False):
-                uwsgi_plugin.uwsgi_log_line('blah', 'test_message')
-                orig_line.assert_called_with('blah', 'test_message')
+        run(target)
 
-    def test_uwsgi_mule_msg_header_apply(self, uwsgi_plugin):
-        args = ('test_stream', 'test_line')
-        kwargs = {}
-        expected_serialized = uwsgi_plugin._encode_mule_msg(*args)
-        with mock.patch('uwsgi.mule_msg') as mm:
-            uwsgi_plugin._mule_msg(*args, **kwargs)
-            mm.assert_called_with(expected_serialized)
+    def test_uwsgi_handle_invalid_msg_pass_thru(self):
+        def target(uwsgi_plugin):
+            message = ('this is a fake stream', 'this is a fake line!')
+            pickle_data = pickle.dumps(message)
+            with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
+                with mock.patch.object(uwsgi_plugin, 'mule_msg_dispatcher') as dispatcher:
+                    uwsgi_plugin._plugin_mule_msg_shim(pickle_data)
+                    dispatcher.assert_called_with(pickle_data)
+                    assert not orig_line.called
 
-    def test_uwsgi_mule_msg_header_apply_with_mule(self, uwsgi_plugin):
-        args = ('test_stream', 'test_line')
-        kwargs = {'mule': 1}
-        expected_serialized = uwsgi_plugin._encode_mule_msg(*args)
-        with mock.patch('uwsgi.mule_msg') as mm:
-            uwsgi_plugin._mule_msg(*args, **kwargs)
-            mm.assert_called_with(expected_serialized, 1)
+        run(target)
 
-    def test_decode_mule_msg_tag_error(self, uwsgi_plugin):
-        stream = b'test stream'
-        line = b'test line'
-        msg = struct.pack(uwsgi_plugin.ENCODE_FMT, b'blah', len(stream), len(line)) + stream + line
-        with pytest.raises(ValueError):
-            uwsgi_plugin._decode_mule_msg(msg)
+    def test_uwsgi_default_over_max_size(self):
+        def target(uwsgi_plugin):
+            big_string = 's' * 65536
+            assert uwsgi_plugin._mule_msg('blah', big_string) == False
 
-    def test_decode_mule_msg_len_error(self, uwsgi_plugin):
-        stream = b'test_stream'
-        line = b'test line'
-        msg = struct.pack(uwsgi_plugin.ENCODE_FMT, uwsgi_plugin.HEADER_TAG, len(stream), len(line)-1) + stream + line
-        with pytest.raises(ValueError):
-            uwsgi_plugin._decode_mule_msg(msg)
+        run(target)
+
+    def test_uwsgi_default_on_failed_mule_msg(self):
+        def target(uwsgi_plugin):
+            with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
+                with mock.patch.object(uwsgi_plugin, '_mule_msg', return_value=False):
+                    uwsgi_plugin.uwsgi_log_line('blah', 'test_message')
+                    orig_line.assert_called_with('blah', 'test_message')
+
+        run(target)
+
+    def test_uwsgi_mule_msg_header_apply(self):
+        def target(uwsgi_plugin):
+            args = ('test_stream', 'test_line')
+            kwargs = {}
+            expected_serialized = uwsgi_plugin._encode_mule_msg(*args)
+            with mock.patch('uwsgi.mule_msg') as mm:
+                uwsgi_plugin._mule_msg(*args, **kwargs)
+                mm.assert_called_with(expected_serialized)
+
+        run(target)
+
+    def test_uwsgi_mule_msg_header_apply_with_mule(self):
+        def target(uwsgi_plugin):
+            args = ('test_stream', 'test_line')
+            kwargs = {'mule': 1}
+            expected_serialized = uwsgi_plugin._encode_mule_msg(*args)
+            with mock.patch('uwsgi.mule_msg') as mm:
+                uwsgi_plugin._mule_msg(*args, **kwargs)
+                mm.assert_called_with(expected_serialized, 1)
+
+        run(target)
+
+    def test_decode_mule_msg_tag_error(self):
+        def target(uwsgi_plugin):
+            stream = b'test stream'
+            line = b'test line'
+            msg = struct.pack(uwsgi_plugin.ENCODE_FMT, b'blah', len(stream), len(line)) + stream + line
+            with pytest.raises(ValueError):
+                uwsgi_plugin._decode_mule_msg(msg)
+
+        run(target)
+
+    def test_decode_mule_msg_len_error(self):
+        def target(uwsgi_plugin):
+            stream = b'test_stream'
+            line = b'test line'
+            msg = struct.pack(uwsgi_plugin.ENCODE_FMT, uwsgi_plugin.HEADER_TAG, len(stream), len(line) - 1) + stream + line
+            with pytest.raises(ValueError):
+                uwsgi_plugin._decode_mule_msg(msg)
+
+        run(target)
+
+    def test_validate_no_pollution(self):
+        assert 'uwsgi' not in sys.modules
+        assert 'uwsgidecorators' not in sys.modules
+
+        with pytest.raises(ImportError):
+            import clog.uwsgi_plugin
+
+        with pytest.raises(ImportError):
+            from clog import uwsgi_plugin
+            # Use it so flake doesn't complain
+            # does noqa not work here? Let's make a fail case!
+            assert uwsgi_plugin.max_recv_size == 0
+
+        import clog.handlers
+        with pytest.raises(AttributeError):
+            getattr(clog.handlers, 'UwsgiHandler')
