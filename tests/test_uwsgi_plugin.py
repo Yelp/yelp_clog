@@ -30,8 +30,14 @@ def uwsgi_plugin():
     import clog.uwsgi_plugin
 
     yield clog.uwsgi_plugin
+
     sys.modules.pop('uwsgi')
     sys.modules.pop('uwsgidecorators')
+    sys.modules.pop('clog.uwsgi_plugin')
+    del clog.handlers.UwsgiHandler
+
+    with pytest.raises(ImportError):
+        import clog.uwsgi_plugin
 
 
 @pytest.mark.usefixtures('uwsgi_plugin')
