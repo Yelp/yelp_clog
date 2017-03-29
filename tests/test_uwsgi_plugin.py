@@ -87,14 +87,14 @@ class TestUwsgiPlugin(object):
             uwsgi_plugin._mule_msg(*args, **kwargs)
             mm.assert_called_with(expected_serialized, 1)
 
-    def test_decode_mule_msg_exc_tag(self, uwsgi_plugin):
+    def test_decode_mule_msg_tag_error(self, uwsgi_plugin):
         stream = b'test stream'
         line = b'test line'
         msg = struct.pack(uwsgi_plugin.ENCODE_FMT, b'blah', len(stream), len(line)) + stream + line
         with pytest.raises(ValueError):
             uwsgi_plugin._decode_mule_msg(msg)
 
-    def test_decode_mule_msg_exc_len(self, uwsgi_plugin):
+    def test_decode_mule_msg_len_error(self, uwsgi_plugin):
         stream = b'test_stream'
         line = b'test line'
         msg = struct.pack(uwsgi_plugin.ENCODE_FMT, uwsgi_plugin.HEADER_TAG, len(stream), len(line)-1) + stream + line
