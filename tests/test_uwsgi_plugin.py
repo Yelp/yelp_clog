@@ -1,7 +1,8 @@
-import marshal
 import mock
 import pickle
 import pytest
+import six
+import struct
 import sys
 
 
@@ -37,15 +38,15 @@ def uwsgi_plugin():
 class TestUwsgiPlugin(object):
 
     def test_uwsgi_handle_msg_header(self, uwsgi_plugin):
-        clog_msg = (('abc', '123'), {})
-        pickle_data = pickle.dumps(clog_msg)
-        marshal_data = uwsgi_plugin.MSG_HEADER + marshal.dumps(clog_msg)
+        message = ('this is a fake stream', 'this is a fake line!')
+        pickle_data = pickle.dumps(message)
+        mule_msg_data = uwsgi_plugin._encode_mule_msg(*message)
         with mock.patch.object(uwsgi_plugin, '_orig_log_line') as orig_line:
             with mock.patch.object(uwsgi_plugin, 'mule_msg_dispatcher') as dispatcher:
                 uwsgi_plugin._plugin_mule_msg_shim(pickle_data)
                 dispatcher.assert_called_with(pickle_data)
-                uwsgi_plugin._plugin_mule_msg_shim(marshal_data)
-                orig_line.assert_called_with(*clog_msg[0], **clog_msg[1])
+                uwsgi_plugin._plugin_mule_msg_shim(mule_msg_data)
+                orig_line.assert_called_with(*map(six.b, message))
 
 
     def test_uwsgi_default_over_max_size(self, uwsgi_plugin):
@@ -61,30 +62,32 @@ class TestUwsgiPlugin(object):
 
 
     def test_uwsgi_mule_msg_header_apply(self, uwsgi_plugin):
-        # for some reason python3 marshal serializes arguments
-        # differently when they're handled via expansion/compaction
-        def build_serialized(*args, **kwargs):
-            kwargs.pop('mule', None)
-            return uwsgi_plugin.MSG_HEADER + marshal.dumps((args, kwargs))
-
         args = ('test_stream', 'test_line')
         kwargs = {}
-        expected_serialized = build_serialized(*args, **kwargs)
+        expected_serialized = uwsgi_plugin._encode_mule_msg(*args)
         with mock.patch('uwsgi.mule_msg') as mm:
             uwsgi_plugin._mule_msg(*args, **kwargs)
             mm.assert_called_with(expected_serialized)
 
 
     def test_uwsgi_mule_msg_header_apply_with_mule(self, uwsgi_plugin):
-        # for some reason python3 marshal serializes arguments
-        # differently when they're handled via expansion/compaction
-        def build_serialized(*args, **kwargs):
-            kwargs.pop('mule', None)
-            return uwsgi_plugin.MSG_HEADER + marshal.dumps((args, kwargs))
-
         args = ('test_stream', 'test_line')
         kwargs = {'mule': 1}
-        expected_serialized = build_serialized(*args, **kwargs)
+        expected_serialized = uwsgi_plugin._encode_mule_msg(*args)
         with mock.patch('uwsgi.mule_msg') as mm:
             uwsgi_plugin._mule_msg(*args, **kwargs)
             mm.assert_called_with(expected_serialized, 1)
+
+    def test_decode_mule_msg_exc_tag(self, uwsgi_plugin):
+        stream = b'test stream'
+        line = b'test line'
+        msg = struct.pack(uwsgi_plugin.ENCODE_FMT, b'blah', len(stream), len(line)) + stream + line
+        with pytest.raises(ValueError):
+            uwsgi_plugin._decode_mule_msg(msg)
+
+    def test_decode_mule_msg_exc_len(self, uwsgi_plugin):
+        stream = b'test_stream'
+        line = b'test line'
+        msg = struct.pack(uwsgi_plugin.ENCODE_FMT, uwsgi_plugin.HEADER_TAG, len(stream), len(line)-1) + stream + line
+        with pytest.raises(ValueError):
+            uwsgi_plugin._decode_mule_msg(msg)

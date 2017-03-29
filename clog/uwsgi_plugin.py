@@ -3,14 +3,37 @@ import logging
 import clog
 import clog.global_state
 import clog.handlers
-import marshal
+import struct
+import six
 from uwsgidecorators import mule_msg_dispatcher
 
-MSG_HEADER = b'clog'
+HEADER_TAG = b'clog'
+HEADER_SZ = len(HEADER_TAG) + 8  # +8 for two `struct` integers
+ENCODE_FMT = '{}sii'.format(len(HEADER_TAG))
 
-def _mule_msg(*args, **kwargs):
-    mule = kwargs.pop('mule', None)
-    data = MSG_HEADER + marshal.dumps((args, kwargs))
+
+def _encode_mule_msg(stream, line):
+    if isinstance(stream, six.text_type):
+        stream = stream.encode('UTF-8')
+    if isinstance(line, six.text_type):
+        line = line.encode('UTF-8')
+    return struct.pack(ENCODE_FMT, HEADER_TAG, len(stream), len(line)) + stream + line
+
+
+def _decode_mule_msg(msg):
+    tag, l1, l2 = struct.unpack(ENCODE_FMT, msg[:HEADER_SZ])
+    if tag != HEADER_TAG:
+        raise ValueError("Invalid Header Tag")
+
+    if len(msg) != HEADER_SZ + l1 + l2:
+        raise ValueError("Message does not match specified size")
+
+    msg = msg[HEADER_SZ:]
+    return msg[:l1], msg[l1:]
+
+
+def _mule_msg(stream, line, mule=None):
+    data = _encode_mule_msg(stream, line)
     # Unfortunately this check has to come after the marshalling
     # unless we just want to make a conservative guess
     if len(data) > max_recv_size:
@@ -23,10 +46,10 @@ def _mule_msg(*args, **kwargs):
     return uwsgi.mule_msg(data)
 
 def _plugin_mule_msg_shim(message):
-    if message[:len(MSG_HEADER)] == MSG_HEADER:
-        args, kwargs = marshal.loads(message[len(MSG_HEADER):])
-        return _orig_log_line(*args, **kwargs)
-    else:
+    try:
+        args = _decode_mule_msg(message)
+        return _orig_log_line(*args)
+    except Exception:
         return mule_msg_dispatcher(message)
 
 
