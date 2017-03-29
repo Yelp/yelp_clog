@@ -8,8 +8,8 @@ import six
 from uwsgidecorators import mule_msg_dispatcher
 
 HEADER_TAG = b'clog'
-HEADER_SZ = len(HEADER_TAG) + 8  # +8 for two `struct` integers
 ENCODE_FMT = '{}sii'.format(len(HEADER_TAG))
+HEADER_SZ = struct.calcsize(ENCODE_FMT)
 
 
 def _encode_mule_msg(stream, line):
