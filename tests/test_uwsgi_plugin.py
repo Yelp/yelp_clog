@@ -6,8 +6,13 @@ import six
 import struct
 import sys
 
+MASTERPID = os.getpid()
+POLLUTE = os.environ.get('POLLUTE', False)
+
 
 def install_fake_uwsgi():
+    if not POLLUTE:
+        assert os.getpid() != MASTERPID
 
     class uwsgi(object):
         mule_msg_hook = None
@@ -34,17 +39,22 @@ def run(target):
     def _waitpid_for_status(pid):
         return (os.waitpid(pid, 0)[1] & 0xFF00) >> 8
 
-    pid = os.fork()
-    if not pid:
+    if not POLLUTE:
+        pid = os.fork()
+        if not pid:
+            install_fake_uwsgi()
+            import clog.uwsgi_plugin
+            try:
+                target(clog.uwsgi_plugin)
+            except Exception:
+                os._exit(1)
+            os._exit(0)
+
+        assert _waitpid_for_status(pid) == 0
+    else:
         install_fake_uwsgi()
         import clog.uwsgi_plugin
-        try:
-            target(clog.uwsgi_plugin)
-        except Exception:
-            os._exit(1)
-        os._exit(0)
-
-    assert _waitpid_for_status(pid) == 0
+        target(clog.uwsgi_plugin)
 
 
 class TestUwsgiPlugin(object):
@@ -137,20 +147,3 @@ class TestUwsgiPlugin(object):
                 uwsgi_plugin._decode_mule_msg(msg)
 
         run(target)
-
-    def test_validate_no_pollution(self):
-        assert 'uwsgi' not in sys.modules
-        assert 'uwsgidecorators' not in sys.modules
-
-        with pytest.raises(ImportError):
-            import clog.uwsgi_plugin
-
-        with pytest.raises(ImportError):
-            from clog import uwsgi_plugin
-            # Use it so flake doesn't complain
-            # does noqa not work here? Let's make a fail case!
-            assert uwsgi_plugin.max_recv_size == 0
-
-        import clog.handlers
-        with pytest.raises(AttributeError):
-            getattr(clog.handlers, 'UwsgiHandler')
