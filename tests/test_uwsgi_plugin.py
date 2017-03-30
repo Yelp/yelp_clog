@@ -7,7 +7,7 @@ import struct
 import sys
 
 MASTERPID = os.getpid()
-POLLUTE = os.environ.get('POLLUTE', False)
+POLLUTE = os.environ.get('POLLUTE')
 
 
 def install_fake_uwsgi():
@@ -30,8 +30,9 @@ def install_fake_uwsgi():
         def mule_msg_dispatcher(message):
             pass
 
-    sys.modules['uwsgi'] = uwsgi
-    sys.modules['uwsgidecorators'] = uwsgidecorators
+    if not 'uwsgi' in sys.modules:
+        sys.modules['uwsgi'] = uwsgi
+        sys.modules['uwsgidecorators'] = uwsgidecorators
 
 
 def run(target):
