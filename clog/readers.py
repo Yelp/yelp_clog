@@ -403,7 +403,11 @@ class StreamTailer(object):
     def list_streams(self):
         """Get a context manager to use for reading list names"""
         towrite = ""
-        return NetCLogStreamReader._ContextManager(self, towrite)
+        return NetCLogStreamReader._ContextManager(
+            self,
+            towrite,
+            protocol_opts=self._protocol_opts,
+        )
 
 def construct_conn_msg(stream, lines=None, protocol_opts=None):
     """Return a connnection message
@@ -525,9 +529,10 @@ class NetCLogStreamReader(object):
         All of these context managers strip the newlines when reading.
         """
 
-        def __init__(self, stream_reader, message):
+        def __init__(self, stream_reader, message, protocol_opts=None):
             self.stream_reader = stream_reader
             self.message = message
+            self.protocol_opts = protocol_opts
 
         def _connect(self):
             self._reader = StreamTailer(self.message,
@@ -537,7 +542,8 @@ class NetCLogStreamReader(object):
                                         automagic_recovery=False,
                                         add_newlines=False,
                                         raise_on_start=False,
-                                        use_kafka=False)
+                                        use_kafka=False,
+                                        protocol_opts=self.protocol_opts)
 
         def __enter__(self):
             self._connect()
