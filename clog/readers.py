@@ -194,8 +194,10 @@ def find_tail_host(host=None):
                 tail_host = get_settings('REGION_TO_TAIL_HOST')[region]
             else:
                 tail_host = get_settings('ECOSYSTEM_TO_TAIL_HOST')[ecosystem]
-    except (KeyError, IOError):
+    except KeyError:
         tail_host = host
+    except IOError:
+        raise
     return tail_host
 
 

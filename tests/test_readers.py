@@ -19,6 +19,7 @@ import shutil
 import tempfile
 import time
 
+import mock
 import pytest
 
 from clog import readers, loggers
@@ -143,3 +144,36 @@ class TestCLogStreamReaderAcceptance(object):
             num_lines += 1
             assert line == "A log line\n"
         assert self.num_expected_lines == num_lines
+
+
+class TestFindTailHost(object):
+
+    TEST_HOST = 'fake-host'
+    TEST_TAIL_HOST = 'foo.bar.fake-host.com'
+
+    @pytest.yield_fixture
+    def mock_get_settings(self):
+        with mock.patch('clog.readers.get_settings') as get_settings:
+            get_settings.return_value = {self.TEST_HOST: self.TEST_TAIL_HOST}
+            yield
+
+    @pytest.yield_fixture
+    def mock_get_settings_failed(self):
+        with mock.patch('clog.readers.get_settings') as get_settings:
+            get_settings.side_effect = IOError('missing file!')
+            yield
+
+    def test(self, mock_get_settings):
+        tail_host = readers.find_tail_host(host=self.TEST_HOST)
+
+        assert tail_host == self.TEST_TAIL_HOST
+
+    def test_with_file_missing(self, mock_get_settings_failed):
+        with pytest.raises(Exception):
+            readers.find_tail_host(host=self.TEST_HOST)
+
+    def test_with_host_key_missing(self, mock_get_settings):
+        OTHER_TEST_HOST = 'fake-host-2'
+        tail_host = readers.find_tail_host(host=OTHER_TEST_HOST)
+
+        assert tail_host == OTHER_TEST_HOST
