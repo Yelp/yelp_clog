@@ -108,6 +108,10 @@ use_kafka = clog_namespace.get_bool('use_kafka',
     default=False,
     help='If True, will tail from a stream via a service talking to Kafka')
 
+metrics_sample_rate = clog_namespace.get_int('metrics_sample_rate',
+    default=0,
+    help='Number of messages to sample to emit one latency metric.')
+
 is_logging_configured = False
 
 

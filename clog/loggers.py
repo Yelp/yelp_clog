@@ -38,6 +38,7 @@ import thriftpy
 
 
 from clog import config
+from clog.metrics_reporter import MetricsReporter
 from clog.utils import scribify
 
 import thriftpy.transport.socket
@@ -148,6 +149,8 @@ class ScribeLogger(object):
         self.__lock = threading.RLock()
         self._birth_pid = os.getpid()
 
+        self.metrics = MetricsReporter(sample_rate=config.metrics_sample_rate)
+
     def _maybe_reconnect(self):
         """Try (re)connecting to the server if it's been long enough since our
         last attempt.
@@ -169,7 +172,7 @@ class ScribeLogger(object):
            Since this method is called in log_line, the line should be in utf-8 format and
            less than MAX_LINE_SIZE_IN_BYTES already. We don't limit traceback size.
         """
-        with self.__lock:
+        with self.__lock, self.metrics.sampled_request():
             if os.getpid() != self._birth_pid:
                 raise ScribeIsNotForkSafeError
             if not self.connected:
