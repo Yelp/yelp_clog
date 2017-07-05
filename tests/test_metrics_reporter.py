@@ -80,3 +80,11 @@ class TestMetricsReporter(object):
         with metrics.sampled_request():
             assert metrics._sample_counter == 0
 
+    @mock.patch('clog.metrics_reporter.MetricsReporter._sample_log_line_latency.record', autospec=True)
+    def test_latency_microseconds(self, mock_latency_record):
+        metrics = MetricsReporter(sample_rate=1)
+        with metrics.sampled_request():
+            pass
+        assert mock_latency_record.call_count == 1
+        # time.time() has a resolution of down to half a microsecond, so seeing under that means we're tracking s or ms.
+        assert mock_latency_record.call_args[1]['value'] > 0.1

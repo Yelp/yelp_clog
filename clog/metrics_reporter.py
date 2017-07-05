@@ -16,6 +16,8 @@
 
 from contextlib import contextmanager
 
+import time
+
 try:
     from yelp_meteorite import create_counter
     from yelp_meteorite import create_timer
@@ -29,10 +31,7 @@ class FakeMetric(object):
     def count(self, *args, **kwargs):
         pass
 
-    def start(self, *args, **kwargs):
-        pass
-
-    def stop(self, *args, **kwargs):
+    def record(self, *args, **kwargs):
         pass
 
 
@@ -40,7 +39,7 @@ METRICS_PREFIX = 'yelp_clog.'
 METRICS_SAMPLE_PREFIX = METRICS_PREFIX + 'sample.'
 METRICS_TOTAL_PREFIX = METRICS_PREFIX + 'total.'
 LOG_LINE_SENT = 'log_line.sent'
-LOG_LINE_LATENCY = 'log_line.latency'
+LOG_LINE_LATENCY = 'log_line.latency_microseconds'
 
 
 def _create_or_fake_counter(*args, **kwargs):
@@ -61,6 +60,10 @@ def _create_or_fake_timer(*args, **kwargs):
         return create_timer(*args, **kwargs)
     except NameError:
         return FakeMetric()
+
+
+def _convert_to_microseconds(seconds):
+    return 1000000 * seconds
 
 
 class MetricsReporter(object):
@@ -84,9 +87,10 @@ class MetricsReporter(object):
         if self._sample_rate and self._sample_counter % self._sample_rate == 0:
             self._total_log_line_sent.count(value=self._sample_counter);
             self._sample_counter = 0
-            self._sample_log_line_latency.start()
+            start_time = time.time()
             yield  # Do the actual work
-            self._sample_log_line_latency.stop()
             self._sample_log_line_sent.count()
+            duration = _convert_to_microseconds(time.time() - start_time)
+            self._sample_log_line_latency.record(value=duration)
         else:
             yield  # Do the actual work
