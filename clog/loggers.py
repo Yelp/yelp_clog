@@ -35,7 +35,10 @@ import six
 import pkg_resources
 
 import thriftpy
-
+try:
+    from monk.producers import MonkProducer
+except ImportError:
+    pass
 
 from clog import config
 from clog.metrics_reporter import MetricsReporter
@@ -237,6 +240,16 @@ class ScribeLogger(object):
     def close(self):
         self.transport.close()
         self.connected = False
+
+
+class MonkLogger(object):
+    """Wrapper around MonkProducer"""
+
+    def __init__(self, client_id, host, port):
+        self.producer = MonkProducer(client_id, host, port)
+
+    def log_line(self, stream, line):
+        self.producer.send_messages(stream, line, None)
 
 
 class FileLogger(object):

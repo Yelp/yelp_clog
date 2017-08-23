@@ -52,6 +52,40 @@ class TestScribeHandler(object):
             self.handler.emit(self.record)
 
 
+class MonkHandler(object):
+
+    @pytest.fixture(autouse=True)
+    def setup_handler(self):
+        args = 'test_client', 'localhost', 4545, 'test_stream'
+        self.record = logging.LogRecord(
+            'name', logging.WARN, 'path', 50, 'oops', None, None)
+        with mock.patch('clog.logger.MonkProducer') as self.producer:
+            self.handler = handlers.MonkHandler(*args)
+
+    def test_init(self):
+        assert self.handler.stream == 'test_stream'
+        assert self.handler.logger.__class__ == loggers.MonkLogger
+
+    def test_emit_exception(self):
+        self.handler.logger.log_line = mock.Mock()
+        self.handler.logger.log_line.side_effect = Exception("Ooops")
+        with mock.patch('sys.stderr') as mock_stderr:
+            self.handler.emit(self.record)
+            assert mock.call('Exception: Ooops\n') in mock_stderr.write.call_args_list
+
+    def test_emit(self):
+        self.handler.logger.log_line = mock.Mock()
+        self.handler.emit(self.record)
+        self.handler.logger.log_line.assert_called_with('test_stream', 'oops')
+        self.producer.send_messages.assert_called_once_with('test_stream', 'oops', None)
+
+    def test_emit_interrupt_exception(self):
+        self.handler.logger.log_line = mock.Mock()
+        self.handler.logger.log_line.side_effect = KeyboardInterrupt("Stop")
+        with pytest.raises(KeyboardInterrupt):
+            self.handler.emit(self.record)
+
+
 class TestCLogHandler(object):
 
     @pytest.fixture(autouse=True)

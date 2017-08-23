@@ -31,7 +31,7 @@ setup(
     ],
     extras_require={
         'uwsgi': ['uWSGI'],
-        'internal': ['yelp_meteorite']
+        'internal': ['yelp_meteorite', 'monk']
     },
     classifiers=[
         'Programming Language :: Python :: 2',
