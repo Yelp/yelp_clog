@@ -101,12 +101,12 @@ class MonkHandler(logging.Handler):
 
 
         :param client_id: client id to identify the user logging
+        :param stream: name of the monk stream logs will be sent to
         :param host: hostname of monk server
         :param port: port number of monk server
-        :param stream: name of the monk stream logs will be sent to
         """
 
-    def __init__(self, client_id, host, port, stream):
+    def __init__(self, client_id, stream, host=None, port=None):
         logging.Handler.__init__(self)
         self.stream = stream
         self.logger = MonkLogger(client_id, host, port)

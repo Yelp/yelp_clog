@@ -52,19 +52,19 @@ class TestScribeHandler(object):
             self.handler.emit(self.record)
 
 
-class MonkHandler(object):
+class TestMonkHandler(object):
 
     @pytest.fixture(autouse=True)
     def setup_handler(self):
-        args = 'test_client', 'localhost', 4545, 'test_stream'
+        args = 'test_client', 'test_stream', 'localhost', 4545
         self.record = logging.LogRecord(
             'name', logging.WARN, 'path', 50, 'oops', None, None)
-        with mock.patch('clog.logger.MonkProducer') as self.producer:
+        with mock.patch.object(handlers, 'MonkLogger') as self.logger:
             self.handler = handlers.MonkHandler(*args)
 
     def test_init(self):
         assert self.handler.stream == 'test_stream'
-        assert self.handler.logger.__class__ == loggers.MonkLogger
+        assert self.handler.logger == self.logger.return_value
 
     def test_emit_exception(self):
         self.handler.logger.log_line = mock.Mock()
@@ -77,7 +77,6 @@ class MonkHandler(object):
         self.handler.logger.log_line = mock.Mock()
         self.handler.emit(self.record)
         self.handler.logger.log_line.assert_called_with('test_stream', 'oops')
-        self.producer.send_messages.assert_called_once_with('test_stream', 'oops', None)
 
     def test_emit_interrupt_exception(self):
         self.handler.logger.log_line = mock.Mock()

@@ -245,11 +245,11 @@ class ScribeLogger(object):
 class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
-    def __init__(self, client_id, host, port):
+    def __init__(self, client_id, host=None, port=None):
         self.producer = MonkProducer(client_id, host, port)
 
     def log_line(self, stream, line):
-        self.producer.send_messages(stream, line, None)
+        self.producer.send_messages(stream, [line], None)
 
 
 class FileLogger(object):
