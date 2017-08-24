@@ -17,7 +17,7 @@ Log lines to scribe using the default global logger.
 """
 
 from clog import config
-from clog.loggers import FileLogger, ScribeLogger, StdoutLogger
+from clog.loggers import FileLogger, MonkLogger, ScribeLogger, StdoutLogger
 
 # global logger, used by module-level functions
 loggers = None
@@ -50,6 +50,9 @@ def check_create_default_loggers():
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
+
+        if not config.monk_disable:
+            loggers.append(MonkLogger(config.monk_client_id))
 
         if not loggers and not config.is_logging_configured:
             raise LoggingNotConfiguredError

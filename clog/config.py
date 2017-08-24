@@ -82,6 +82,14 @@ scribe_disable = clog_namespace.get_bool('scribe_disable',
     default=True,
     help="Disable writing logs to scribe.")
 
+monk_disable = clog_namespace.get_bool('monk_disable',
+    default=True,
+    help="Disable writing logs to monk.")
+
+monk_client_id = clog_namespace.get_string('monk_client_id',
+    default="clog",
+    help="Identification for user writing to monk")
+
 scribe_host = clog_namespace.get_string('scribe_host',
     help="Hostname of the scribe server.")
 
