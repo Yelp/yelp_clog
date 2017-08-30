@@ -41,7 +41,7 @@ def find_open_port():
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(('0.0.0.0', 0))
-    s.listen(0)
+    s.listen(1)
 
     sockname = s.getsockname()
 
