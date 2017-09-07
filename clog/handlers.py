@@ -108,7 +108,7 @@ class MonkHandler(logging.Handler):
 
     def __init__(self, client_id, stream, host=None, port=None):
         logging.Handler.__init__(self)
-        self.stream = stream
+        self.stream = '_clog.{0}'.format(stream)
         self.logger = MonkLogger(client_id, host, port)
 
     def emit(self, record):

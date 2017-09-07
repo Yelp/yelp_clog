@@ -63,7 +63,7 @@ class TestMonkHandler(object):
             self.handler = handlers.MonkHandler(*args)
 
     def test_init(self):
-        assert self.handler.stream == 'test_stream'
+        assert self.handler.stream == '_clog.test_stream'
         assert self.handler.logger == self.logger.return_value
 
     def test_emit_exception(self):
@@ -76,7 +76,7 @@ class TestMonkHandler(object):
     def test_emit(self):
         self.handler.logger.log_line = mock.Mock()
         self.handler.emit(self.record)
-        self.handler.logger.log_line.assert_called_with('test_stream', 'oops')
+        self.handler.logger.log_line.assert_called_with('_clog.test_stream', 'oops')
 
     def test_emit_interrupt_exception(self):
         self.handler.logger.log_line = mock.Mock()
