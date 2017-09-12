@@ -18,7 +18,7 @@ Log lines to scribe using the default global logger.
 
 from clog import config
 from clog.loggers import FileLogger, MonkLogger, ScribeLogger, StdoutLogger
-from clog.zipkin_plugin import use_zipkin, ZipkinLogger
+from clog.zipkin_plugin import use_zipkin, ZipkinTracing
 
 # global logger, used by module-level functions
 loggers = None
@@ -56,7 +56,7 @@ def check_create_default_loggers():
             loggers.append(MonkLogger(config.monk_client_id))
 
         if use_zipkin():
-            loggers = map(ZipkinLogger, loggers)
+            loggers = map(ZipkinTracing, loggers)
 
         if not loggers and not config.is_logging_configured:
             raise LoggingNotConfiguredError

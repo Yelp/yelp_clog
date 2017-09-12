@@ -15,14 +15,14 @@ def use_zipkin():
     return zipkin_plugin_enabled and config.use_zipkin
 
 
-class ZipkinLogger(object):
+class ZipkinTracing(object):
     """Wrapper class to instrument log_line calls with Zipkin.
 
     This class is meant to be used if use_zipkin() returns True.
     e.g:
         logger = MyLogger()
         if use_zipkin():
-            logger = ZipkinLogger(logger)
+            logger = ZipkinTracing(logger)
 
     Each call to log_line will add a Zipkin Span and call the underlying
     log_line, all other method call will only call the corresponding method

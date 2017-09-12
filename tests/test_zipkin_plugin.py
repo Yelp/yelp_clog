@@ -40,11 +40,11 @@ class TestZipkinPlugin(object):
 
     def test_logger_no_use_zipkin(self, zipkin_plugin, no_use_zipkin):
         with pytest.raises(AssertionError):
-            zipkin_plugin.ZipkinLogger(MockLogger())
+            zipkin_plugin.ZipkinTracing(MockLogger())
 
     def test_log_line(self, zipkin_plugin, use_zipkin):
         with mock.patch.object(zipkin_plugin, 'zipkin_span') as zipkin_span:
-            logger = zipkin_plugin.ZipkinLogger(MockLogger())
+            logger = zipkin_plugin.ZipkinTracing(MockLogger())
             logger.log_line('stream', 'line')
 
         assert logger.logger.lines == {'stream': ['line']}
@@ -56,7 +56,7 @@ class TestZipkinPlugin(object):
 
     def test_other(self, zipkin_plugin, use_zipkin):
         with mock.patch.object(zipkin_plugin, 'zipkin_span') as zipkin_span:
-            logger = zipkin_plugin.ZipkinLogger(MockLogger())
+            logger = zipkin_plugin.ZipkinTracing(MockLogger())
             logger.close()
 
         assert zipkin_span.call_count == 0

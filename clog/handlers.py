@@ -23,6 +23,7 @@ import logging
 from clog.loggers import MonkLogger
 from clog.loggers import ScribeLogger
 from clog.utils import scribify
+from clog.zipkin_plugin import use_zipkin, ZipkinTracing
 from clog import global_state
 
 
@@ -45,6 +46,8 @@ class CLogHandler(logging.Handler):
         'If no logger is specified, the global one is used'
         logging.Handler.__init__(self)
         self.stream = stream
+        if logger is not None and use_zipkin():
+            logger = ZipkinTracing(logger)
         self.logger = logger or global_state
 
     def emit(self, record):
@@ -78,6 +81,8 @@ class ScribeHandler(logging.Handler):
         logging.Handler.__init__(self)
         self.stream = stream
         self.logger = ScribeLogger(host, port, retry_interval)
+        if use_zipkin():
+            self.logger = ZipkinTracing(self.logger)
 
     def emit(self, record):
         try:
