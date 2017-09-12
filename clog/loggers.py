@@ -249,7 +249,8 @@ class MonkLogger(object):
         self.producer = MonkProducer(client_id, host, port)
 
     def log_line(self, stream, line):
-        self.producer.send_messages(stream, [line], None)
+        clog_stream = '_clog.{0}'.format(stream)
+        self.producer.send_messages(clog_stream, [line], None)
 
 
 class FileLogger(object):
