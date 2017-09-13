@@ -19,8 +19,9 @@ logging to a scribe stream.
 """
 
 import logging
-from clog.loggers import ScribeLogger
 
+from clog.loggers import MonkLogger
+from clog.loggers import ScribeLogger
 from clog.utils import scribify
 from clog import global_state
 
@@ -77,6 +78,38 @@ class ScribeHandler(logging.Handler):
         logging.Handler.__init__(self)
         self.stream = stream
         self.logger = ScribeLogger(host, port, retry_interval)
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.logger.log_line(self.stream, msg)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
+
+
+class MonkHandler(logging.Handler):
+    """Handler for sending python standard logging messages to a monk
+        stream.
+
+        .. code-block:: python
+
+            import clog.handlers, logging
+            log = logging.getLogger(name)
+            log.addHandler(clog.handlers.MonkHandler('client_id', 'localhost', 3600, 'stream'))
+
+
+        :param client_id: client id to identify the user logging
+        :param stream: name of the monk stream logs will be sent to
+        :param host: hostname of monk server
+        :param port: port number of monk server
+        """
+
+    def __init__(self, client_id, stream, host=None, port=None):
+        logging.Handler.__init__(self)
+        self.stream = stream
+        self.logger = MonkLogger(client_id, host, port)
 
     def emit(self, record):
         try:
