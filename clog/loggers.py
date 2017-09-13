@@ -37,7 +37,8 @@ import pkg_resources
 import thriftpy
 try:
     from monk.producers import MonkProducer
-except ImportError:
+except ImportError as e:
+    print("Failed to import monk proudcer :(")
     pass
 
 from clog import config
@@ -91,6 +92,7 @@ WHO_CLOG_LARGE_LINE_STREAM = 'tmp_who_clog_large_line'
 
 def report_to_syslog(is_error, msg):
     # only report errors to syslog
+    syslog.openlog(ident="clog")
     if is_error:
         syslog.syslog(syslog.LOG_ALERT | syslog.LOG_USER, msg)
 
@@ -152,7 +154,10 @@ class ScribeLogger(object):
         self.__lock = threading.RLock()
         self._birth_pid = os.getpid()
 
-        self.metrics = MetricsReporter(sample_rate=config.metrics_sample_rate)
+        self.metrics = MetricsReporter(
+            sample_rate=config.metrics_sample_rate,
+            backend="scribe"
+        )
 
     def _maybe_reconnect(self):
         """Try (re)connecting to the server if it's been long enough since our
@@ -246,11 +251,24 @@ class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
     def __init__(self, client_id, host=None, port=None):
-        self.producer = MonkProducer(client_id, host, port)
+        self.producer = MonkProducer(client_id, host, port, collect_metrics=False)
+        self.report_status = get_default_reporter()
+        self.metrics = MetricsReporter(
+            sample_rate=config.metrics_sample_rate,
+            backend="monk"
+        )
 
     def log_line(self, stream, line):
-        clog_stream = '_clog.{0}'.format(stream)
-        self.producer.send_messages(clog_stream, [line], None)
+        with self.metrics.sampled_request():
+            try:
+                clog_stream = '_clog.{0}'.format(stream)
+                self.producer.send_messages(clog_stream, [line], None)
+            except Exception as e:
+                self.report_status(
+                    True,
+                    'Exception while sending to monk: %s' % str(e)
+                )
+                self.metrics.monk_exception()
 
 
 class FileLogger(object):
