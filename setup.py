@@ -30,6 +30,7 @@ setup(
         'six>=1.4.0',
     ],
     extras_require={
+        'zipkin': ['py_zipkin'],
         'uwsgi': ['uWSGI'],
         'internal': ['yelp_meteorite', 'monk==0.1.20']
     },
