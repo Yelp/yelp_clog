@@ -38,7 +38,7 @@ import pkg_resources
 import thriftpy
 try:
     from monk.producers import MonkProducer
-except ImportError as e:
+except ImportError:
     pass
 
 from clog import config
