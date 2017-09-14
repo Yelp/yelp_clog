@@ -39,7 +39,6 @@ import thriftpy
 try:
     from monk.producers import MonkProducer
 except ImportError as e:
-    print("Failed to import monk proudcer :(")
     pass
 
 from clog import config
@@ -251,26 +250,25 @@ class ScribeLogger(object):
 class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
-    def __init__(self, client_id, host=None, port=None, timeout_backoff_ms=5000):
+    def __init__(self, client_id, host=None, port=None):
         self.stream_prefix = config.monk_stream_prefix
         self.report_status = get_default_reporter()
         self.metrics = MetricsReporter(
             sample_rate=config.metrics_sample_rate,
             backend="monk"
         )
-        self.timeout_backoff_s = timeout_backoff_ms / 1000
+        self.timeout_backoff_s = config.monk_timeout_backoff_ms / 1000
         self.last_timeout = time.time() - self.timeout_backoff_s
         self.producer = MonkProducer(
             client_id,
             host,
             port,
-            timeout_ms=100,
+            timeout_ms=config.monk_timeout_ms,
             collect_metrics=False
         )
 
     def log_line(self, stream, line):
         if time.time() < self.last_timeout + self.timeout_backoff_s:
-            self.metrics.monk_exception()
             return
         with self.metrics.sampled_request():
             try:

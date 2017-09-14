@@ -104,8 +104,8 @@ class MetricsReporter(object):
         if sample_request:
             start_time = time.time()
             yield  # Do the actual work
+            duration = _convert_to_microseconds(time.time() - start_time)
             with self._lock:
-                duration = _convert_to_microseconds(time.time() - start_time)
                 self._total_log_line_sent.count(value=self._sample_counter);
                 self._sample_log_line_sent.count()
                 self._sample_log_line_latency.record(value=duration)

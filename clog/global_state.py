@@ -52,7 +52,6 @@ def check_create_default_loggers():
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
 
-        print config.monk_disable
         if not config.monk_disable:
             loggers.append(MonkLogger(config.monk_client_id))
 

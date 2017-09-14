@@ -94,6 +94,17 @@ monk_stream_prefix = clog_namespace.get_string('monk_stream_prefix',
     default="",
     help="clog-specific prefix to be added to every stream name")
 
+monk_timeout_ms = clog_namespace.get_int('monk_timeout_ms',
+    default=100,
+    help=("Timeout while writing to Monk. After a timeout occurs, "
+          "clog won't write to Monk for `monk_timeout_backoff_ms`, then it "
+          "will try again"))
+
+monk_timeout_backoff_ms = clog_namespace.get_int('monk_timeout_backoff_ms',
+    default=5000,
+    help=("After a timeout occurs, clog won't write to Monk for as many "
+          "milliseconds as defined here"))
+
 scribe_host = clog_namespace.get_string('scribe_host',
     help="Hostname of the scribe server.")
 
