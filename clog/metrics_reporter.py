@@ -114,4 +114,5 @@ class MetricsReporter(object):
             yield  # Do the actual work
 
     def monk_exception(self):
-        self._monk_exception_counter.count(1)
+        with self._lock:
+            self._monk_exception_counter.count(1)

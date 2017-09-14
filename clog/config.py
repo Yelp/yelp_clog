@@ -90,6 +90,10 @@ monk_client_id = clog_namespace.get_string('monk_client_id',
     default="clog",
     help="Identification for user writing to monk")
 
+monk_stream_prefix = clog_namespace.get_string('monk_stream_prefix',
+    default="",
+    help="clog-specific prefix to be added to every stream name")
+
 scribe_host = clog_namespace.get_string('scribe_host',
     help="Hostname of the scribe server.")
 
