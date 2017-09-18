@@ -210,6 +210,11 @@ class ScribeLogger(object):
            If the line size is over 5 MB, a message consisting origin stream information
            will be recorded at WHO_CLOG_LARGE_LINE_STREAM (in json format).
         """
+
+        backend = config.stream_backend_map.get(stream, config.default_backend)
+        if backend not in ('scribe', 'dual'):
+            return
+
         # log unicodes as their utf-8 encoded representation
         if isinstance(line, six.text_type):
             line = line.encode('UTF-8')
@@ -268,6 +273,10 @@ class MonkLogger(object):
         )
 
     def log_line(self, stream, line):
+        backend = config.stream_backend_map.get(stream, config.default_backend)
+        if backend not in ('monk', 'dual'):
+            return
+
         if time.time() < self.last_timeout + self.timeout_backoff_s:
             return
         with self.metrics.sampled_request():
@@ -280,7 +289,7 @@ class MonkLogger(object):
             except socket.timeout as e:
                 self.report_status(True, 'Monk took too long to respond')
                 self.last_timeout = time.time()
-                self.metrics.monk_exception()
+                self.metrics.monk_timeout()
             except Exception as e:
                 self.report_status(
                     True,

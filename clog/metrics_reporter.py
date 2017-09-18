@@ -42,6 +42,7 @@ METRICS_TOTAL_PREFIX = METRICS_PREFIX + 'total.'
 LOG_LINE_SENT = 'log_line.sent'
 LOG_LINE_LATENCY = 'log_line.latency_microseconds'
 LOG_LINE_MONK_EXCEPTION = 'log_line.monk_exception'
+LOG_LINE_MONK_TIMEOUT = 'log_line.monk_timeout'
 
 
 def _create_or_fake_counter(*args, **kwargs):
@@ -91,6 +92,10 @@ class MetricsReporter(object):
             METRICS_TOTAL_PREFIX + LOG_LINE_MONK_EXCEPTION,
             default_dimensions
         )
+        self._monk_timeout_counter = _create_or_fake_counter(
+            METRICS_TOTAL_PREFIX + LOG_LINE_MONK_TIMEOUT,
+            default_dimensions
+        )
         self._sample_rate = sample_rate
         self._lock = threading.RLock()
 
@@ -114,5 +119,11 @@ class MetricsReporter(object):
             yield  # Do the actual work
 
     def monk_exception(self):
+        """Increases the monk exception counter by 1"""
         with self._lock:
             self._monk_exception_counter.count(1)
+
+    def monk_timeout(self):
+        """Increases the monk timeout counter by 1"""
+        with self._lock:
+            self._monk_timeout_counter.count(1)

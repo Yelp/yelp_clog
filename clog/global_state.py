@@ -42,24 +42,45 @@ def check_create_default_loggers():
                 raise ValueError('log_dir not set; set it or disable clog_enable_file_logging')
             loggers.append(FileLogger())
 
+        config.stream_backend_map = create_stream_backend_map()
+
         # possibly add logger that writes to scribe
         if not config.scribe_disable:
             logger = ScribeLogger(config.scribe_host,
                                   config.scribe_port,
                                   config.scribe_retry_interval)
             loggers.append(logger)
+        else:
+            if (config.default_backend in ('scribe', 'dual') or \
+                any(b in ('scribe', 'dual') for b in config.stream_backend_map.values())):
+                raise Exception("Scribe is used as a backend but it's not enabled")
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
 
+        print(">>>  " + str(config.default_backend))
+        print(">>>  " + str(config.monk_disable))
         if not config.monk_disable:
             loggers.append(MonkLogger(config.monk_client_id))
+        else:
+            print(">>>  " + str(config.default_backend))
+            if (config.default_backend in ('monk', 'dual') or \
+                any(b in ('monk', 'dual') for b in config.stream_backend_map.values())):
+                raise Exception("Monk is used as a backend but it's not enabled")
 
         if use_zipkin():
             loggers = map(ZipkinTracing, loggers)
 
         if not loggers and not config.is_logging_configured:
             raise LoggingNotConfiguredError
+
+
+def create_stream_backend_map():
+    stream_backend_map = {}
+    for mapping in config.stream_backend:
+        key, value = mapping.items()[0]
+        stream_backend_map[key] = value
+    return stream_backend_map
 
 
 def reset_default_loggers():
