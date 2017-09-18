@@ -26,6 +26,18 @@ loggers = None
 class LoggingNotConfiguredError(Exception):
     pass
 
+
+def create_stream_backend_map():
+    """PyStaticConfig doesn't allow us to have a map in the configuration,
+    so we represent a map as a list, and we use this function to generate
+    an actual python dictionary from it."""
+    stream_backend_map = {}
+    for mapping in config.stream_backend:
+        key, value = mapping.items()[0]
+        stream_backend_map[key] = value
+    return stream_backend_map
+
+
 def check_create_default_loggers():
     """Set up global loggers, if necessary."""
     global loggers
@@ -58,12 +70,9 @@ def check_create_default_loggers():
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
 
-        print(">>>  " + str(config.default_backend))
-        print(">>>  " + str(config.monk_disable))
         if not config.monk_disable:
             loggers.append(MonkLogger(config.monk_client_id))
         else:
-            print(">>>  " + str(config.default_backend))
             if (config.default_backend in ('monk', 'dual') or \
                 any(b in ('monk', 'dual') for b in config.stream_backend_map.values())):
                 raise Exception("Monk is used as a backend but it's not enabled")
@@ -73,14 +82,6 @@ def check_create_default_loggers():
 
         if not loggers and not config.is_logging_configured:
             raise LoggingNotConfiguredError
-
-
-def create_stream_backend_map():
-    stream_backend_map = {}
-    for mapping in config.stream_backend:
-        key, value = mapping.items()[0]
-        stream_backend_map[key] = value
-    return stream_backend_map
 
 
 def reset_default_loggers():
