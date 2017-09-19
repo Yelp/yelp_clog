@@ -2,7 +2,7 @@
     "type": "record",
     "namespace": "scribe_log",
     "name": "<replace_with_scribe_log_name>",
-    "doc": "Schema used to serialize scribe messages. This schema won't be actually used for scribe logs, and no stream will be assigned to this schema.",
+    "doc": "This schema is not used to actually serialize or deserialize messages, but stream will be assigned to this schema.",
     "fields": [
         {"type": "string", "name": "log_line", "doc": "log line string"}
     ]
