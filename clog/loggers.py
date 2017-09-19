@@ -269,8 +269,7 @@ class MonkLogger(object):
             client_id,
             host,
             port,
-            # timeout_ms=config.monk_timeout_ms,  TODO REVERT
-            timeout=config.monk_timeout_ms,
+            timeout_ms=config.monk_timeout_ms,
             collect_metrics=False
         )
 
