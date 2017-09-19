@@ -93,7 +93,9 @@ default_backend = clog_namespace.get_string('default_backend',
 stream_backend = clog_namespace.get_list('stream_backend',
     default=[],
     help="The map of stream names to backend ('scribe', 'monk' or 'dual'). "
-    "If not specified, the default one will be used."
+    "If not specified, the default one will be used. The mapping must be "
+    "represente as a list using the format\n"
+    "    - stream_name: backend_name"
 )
 
 monk_client_id = clog_namespace.get_string('monk_client_id',
@@ -111,7 +113,7 @@ monk_timeout_ms = clog_namespace.get_int('monk_timeout_ms',
           "will try again."))
 
 monk_timeout_backoff_ms = clog_namespace.get_int('monk_timeout_backoff_ms',
-    default=5000,
+    default=2000,
     help=("After a timeout occurs, clog won't write to Monk for as many "
           "milliseconds as defined here"))
 

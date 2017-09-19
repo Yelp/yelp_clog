@@ -28,12 +28,12 @@ class LoggingNotConfiguredError(Exception):
 
 
 def create_stream_backend_map():
-    """PyStaticConfig doesn't allow us to have a map in the configuration,
+    """PyStaticConfig doesn't support having a map in the configuration,
     so we represent a map as a list, and we use this function to generate
     an actual python dictionary from it."""
     stream_backend_map = {}
     for mapping in config.stream_backend:
-        key, value = mapping.items()[0]
+        key, value = list(mapping.items())[0]
         stream_backend_map[key] = value
     return stream_backend_map
 
@@ -54,28 +54,27 @@ def check_create_default_loggers():
                 raise ValueError('log_dir not set; set it or disable clog_enable_file_logging')
             loggers.append(FileLogger())
 
-        config.stream_backend_map = create_stream_backend_map()
+        stream_backend_map = create_stream_backend_map()
 
         # possibly add logger that writes to scribe
         if not config.scribe_disable:
-            logger = ScribeLogger(config.scribe_host,
-                                  config.scribe_port,
-                                  config.scribe_retry_interval)
+            logger = ScribeLogger(
+                config.scribe_host,
+                config.scribe_port,
+                config.scribe_retry_interval,
+                stream_backend_map=stream_backend_map
+            )
             loggers.append(logger)
-        else:
-            if (config.default_backend in ('scribe', 'dual') or \
-                any(b in ('scribe', 'dual') for b in config.stream_backend_map.values())):
-                raise Exception("Scribe is used as a backend but it's not enabled")
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
 
         if not config.monk_disable:
-            loggers.append(MonkLogger(config.monk_client_id))
-        else:
-            if (config.default_backend in ('monk', 'dual') or \
-                any(b in ('monk', 'dual') for b in config.stream_backend_map.values())):
-                raise Exception("Monk is used as a backend but it's not enabled")
+            logger = MonkLogger(
+                config.monk_client_id,
+                stream_backend_map=stream_backend_map
+            )
+            loggers.append(logger)
 
         if use_zipkin():
             loggers = map(ZipkinTracing, loggers)

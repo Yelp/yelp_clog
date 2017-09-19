@@ -134,13 +134,14 @@ class ScribeLogger(object):
         blocking (no timeout)
     """
 
-    def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None):
+    def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None, stream_backend_map={}):
         # set up thrift and scribe objects
         timeout = logging_timeout if logging_timeout is not None else config.scribe_logging_timeout
         self.socket = thriftpy.transport.socket.TSocket(six.text_type(host), int(port))
         if timeout:
             self.socket.set_timeout(timeout)
 
+        self.stream_backend_map = stream_backend_map
         self.transport = TFramedTransportFactory().get_transport(self.socket)
         protocol = TBinaryProtocolFactory(strict_read=False).get_protocol(self.transport)
         self.client = TClient(scribe_thrift.scribe, protocol)
@@ -210,8 +211,7 @@ class ScribeLogger(object):
            If the line size is over 5 MB, a message consisting origin stream information
            will be recorded at WHO_CLOG_LARGE_LINE_STREAM (in json format).
         """
-
-        backend = config.stream_backend_map.get(stream, config.default_backend)
+        backend = self.stream_backend_map.get(stream, config.default_backend)
         if backend not in ('scribe', 'dual'):
             return
 
@@ -255,7 +255,7 @@ class ScribeLogger(object):
 class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
-    def __init__(self, client_id, host=None, port=None):
+    def __init__(self, client_id, host=None, port=None, stream_backend_map={}):
         self.stream_prefix = config.monk_stream_prefix
         self.report_status = get_default_reporter()
         self.metrics = MetricsReporter(
@@ -263,17 +263,19 @@ class MonkLogger(object):
             backend="monk"
         )
         self.timeout_backoff_s = config.monk_timeout_backoff_ms / 1000
+        self.stream_backend_map = stream_backend_map
         self.last_timeout = time.time() - self.timeout_backoff_s
         self.producer = MonkProducer(
             client_id,
             host,
             port,
-            timeout_ms=config.monk_timeout_ms,
+            # timeout_ms=config.monk_timeout_ms,  TODO REVERT
+            timeout=config.monk_timeout_ms,
             collect_metrics=False
         )
 
     def log_line(self, stream, line):
-        backend = config.stream_backend_map.get(stream, config.default_backend)
+        backend = self.stream_backend_map.get(stream, config.default_backend)
         if backend not in ('monk', 'dual'):
             return
 
