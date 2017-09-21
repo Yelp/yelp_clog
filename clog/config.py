@@ -104,7 +104,7 @@ monk_client_id = clog_namespace.get_string('monk_client_id',
 
 monk_stream_prefix = clog_namespace.get_string('monk_stream_prefix',
     default="",
-    help="clog-specific prefix to be added to every stream name")
+    help="This prefix will be added to all the streams being produced to Monk.")
 
 monk_timeout_ms = clog_namespace.get_int('monk_timeout_ms',
     default=100,
