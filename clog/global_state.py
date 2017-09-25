@@ -26,6 +26,18 @@ loggers = None
 class LoggingNotConfiguredError(Exception):
     pass
 
+
+def create_stream_backend_map():
+    """PyStaticConfig doesn't support having a map in the configuration,
+    so we represent a map as a list, and we use this function to generate
+    an actual python dictionary from it."""
+    stream_backend_map = {}
+    for mapping in config.stream_backend:
+        key, value = list(mapping.items())[0]
+        stream_backend_map[key] = value
+    return stream_backend_map
+
+
 def check_create_default_loggers():
     """Set up global loggers, if necessary."""
     global loggers
@@ -42,18 +54,27 @@ def check_create_default_loggers():
                 raise ValueError('log_dir not set; set it or disable clog_enable_file_logging')
             loggers.append(FileLogger())
 
+        stream_backend_map = create_stream_backend_map()
+
         # possibly add logger that writes to scribe
         if not config.scribe_disable:
-            logger = ScribeLogger(config.scribe_host,
-                                  config.scribe_port,
-                                  config.scribe_retry_interval)
+            logger = ScribeLogger(
+                config.scribe_host,
+                config.scribe_port,
+                config.scribe_retry_interval,
+                stream_backend_map=stream_backend_map
+            )
             loggers.append(logger)
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
 
         if not config.monk_disable:
-            loggers.append(MonkLogger(config.monk_client_id))
+            logger = MonkLogger(
+                config.monk_client_id,
+                stream_backend_map=stream_backend_map
+            )
+            loggers.append(logger)
 
         if use_zipkin():
             loggers = map(ZipkinTracing, loggers)

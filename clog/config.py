@@ -86,9 +86,36 @@ monk_disable = clog_namespace.get_bool('monk_disable',
     default=True,
     help="Disable writing logs to monk.")
 
+default_backend = clog_namespace.get_string('default_backend',
+    default="scribe",
+    help="The default backend to use (can be 'scribe', 'monk' or 'dual')")
+
+stream_backend = clog_namespace.get_list('stream_backend',
+    default=[],
+    help="The map of stream names to backend ('scribe', 'monk' or 'dual'). "
+    "If not specified, the default one will be used. The mapping must be "
+    "represente as a list using the format\n"
+    "    - stream_name: backend_name"
+)
+
 monk_client_id = clog_namespace.get_string('monk_client_id',
     default="clog",
     help="Identification for user writing to monk")
+
+monk_stream_prefix = clog_namespace.get_string('monk_stream_prefix',
+    default="",
+    help="This prefix will be added to all the streams being produced to Monk.")
+
+monk_timeout_ms = clog_namespace.get_int('monk_timeout_ms',
+    default=100,
+    help=("Timeout while writing to Monk. After a timeout occurs, "
+          "clog won't write to Monk for `monk_timeout_backoff_ms`, then it "
+          "will try again."))
+
+monk_timeout_backoff_ms = clog_namespace.get_int('monk_timeout_backoff_ms',
+    default=2000,
+    help=("After a timeout occurs, clog won't write to Monk for as many "
+          "milliseconds as defined here"))
 
 scribe_host = clog_namespace.get_string('scribe_host',
     help="Hostname of the scribe server.")

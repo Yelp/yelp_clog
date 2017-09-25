@@ -26,6 +26,7 @@ import os
 import os.path
 import sys
 import syslog
+import socket
 import threading
 import time
 import traceback
@@ -91,6 +92,7 @@ WHO_CLOG_LARGE_LINE_STREAM = 'tmp_who_clog_large_line'
 
 def report_to_syslog(is_error, msg):
     # only report errors to syslog
+    syslog.openlog(ident="clog")
     if is_error:
         syslog.syslog(syslog.LOG_ALERT | syslog.LOG_USER, msg)
 
@@ -132,13 +134,14 @@ class ScribeLogger(object):
         blocking (no timeout)
     """
 
-    def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None):
+    def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None, stream_backend_map={}):
         # set up thrift and scribe objects
         timeout = logging_timeout if logging_timeout is not None else config.scribe_logging_timeout
         self.socket = thriftpy.transport.socket.TSocket(six.text_type(host), int(port))
         if timeout:
             self.socket.set_timeout(timeout)
 
+        self.stream_backend_map = stream_backend_map
         self.transport = TFramedTransportFactory().get_transport(self.socket)
         protocol = TBinaryProtocolFactory(strict_read=False).get_protocol(self.transport)
         self.client = TClient(scribe_thrift.scribe, protocol)
@@ -152,7 +155,10 @@ class ScribeLogger(object):
         self.__lock = threading.RLock()
         self._birth_pid = os.getpid()
 
-        self.metrics = MetricsReporter(sample_rate=config.metrics_sample_rate)
+        self.metrics = MetricsReporter(
+            sample_rate=config.metrics_sample_rate,
+            backend="scribe"
+        )
 
     def _maybe_reconnect(self):
         """Try (re)connecting to the server if it's been long enough since our
@@ -205,6 +211,10 @@ class ScribeLogger(object):
            If the line size is over 5 MB, a message consisting origin stream information
            will be recorded at WHO_CLOG_LARGE_LINE_STREAM (in json format).
         """
+        backend = self.stream_backend_map.get(stream, config.default_backend)
+        if backend not in ('scribe', 'dual'):
+            return
+
         # log unicodes as their utf-8 encoded representation
         if isinstance(line, six.text_type):
             line = line.encode('UTF-8')
@@ -245,12 +255,48 @@ class ScribeLogger(object):
 class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
-    def __init__(self, client_id, host=None, port=None):
-        self.producer = MonkProducer(client_id, host, port)
+    def __init__(self, client_id, host=None, port=None, stream_backend_map={}):
+        self.stream_prefix = config.monk_stream_prefix
+        self.report_status = get_default_reporter()
+        self.metrics = MetricsReporter(
+            sample_rate=config.metrics_sample_rate,
+            backend="monk"
+        )
+        self.timeout_backoff_s = config.monk_timeout_backoff_ms / 1000
+        self.stream_backend_map = stream_backend_map
+        self.last_timeout = time.time() - self.timeout_backoff_s
+        self.producer = MonkProducer(
+            client_id,
+            host,
+            port,
+            timeout_ms=config.monk_timeout_ms,
+            collect_metrics=False
+        )
 
     def log_line(self, stream, line):
-        clog_stream = '_clog.{0}'.format(stream)
-        self.producer.send_messages(clog_stream, [line], None)
+        backend = self.stream_backend_map.get(stream, config.default_backend)
+        if backend not in ('monk', 'dual'):
+            return
+
+        if time.time() < self.last_timeout + self.timeout_backoff_s:
+            return
+        with self.metrics.sampled_request():
+            try:
+                self.producer.send_messages(
+                    self.stream_prefix + stream,
+                    [line],
+                    None
+                )
+            except socket.timeout as e:
+                self.report_status(True, 'Monk took too long to respond')
+                self.last_timeout = time.time()
+                self.metrics.monk_timeout()
+            except Exception as e:
+                self.report_status(
+                    True,
+                    'Exception while sending to monk: %s' % str(e)
+                )
+                self.metrics.monk_exception()
 
 
 class FileLogger(object):

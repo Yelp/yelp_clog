@@ -16,6 +16,7 @@
 
 from contextlib import contextmanager
 
+import threading
 import time
 
 try:
@@ -40,6 +41,8 @@ METRICS_SAMPLE_PREFIX = METRICS_PREFIX + 'sample.'
 METRICS_TOTAL_PREFIX = METRICS_PREFIX + 'total.'
 LOG_LINE_SENT = 'log_line.sent'
 LOG_LINE_LATENCY = 'log_line.latency_microseconds'
+LOG_LINE_MONK_EXCEPTION = 'log_line.monk_exception'
+LOG_LINE_MONK_TIMEOUT = 'log_line.monk_timeout'
 
 
 def _create_or_fake_counter(*args, **kwargs):
@@ -68,29 +71,54 @@ def _convert_to_microseconds(seconds):
 
 class MetricsReporter(object):
     """Basic metrics reporter that reports on a sampled fraction of requests.
-
-    Not thread-safe, thus is called from within the context of ScribeLogger's existing RLock.
     """
 
-    _sample_counter = 0
-    _sample_log_line_sent = _create_or_fake_counter(METRICS_SAMPLE_PREFIX + LOG_LINE_SENT)
-    _sample_log_line_latency = _create_or_fake_timer(METRICS_SAMPLE_PREFIX + LOG_LINE_LATENCY)
-    _total_log_line_sent = _create_or_fake_counter(METRICS_TOTAL_PREFIX + LOG_LINE_SENT)
-
-    def __init__(self, sample_rate=0):
+    def __init__(self, backend, sample_rate=0):
+        default_dimensions = { 'backend': backend }
+        self._sample_counter = 0
+        self._sample_log_line_latency = _create_or_fake_timer(
+            METRICS_SAMPLE_PREFIX + LOG_LINE_LATENCY,
+            default_dimensions
+        )
+        self._total_log_line_sent = _create_or_fake_counter(
+            METRICS_TOTAL_PREFIX + LOG_LINE_SENT,
+            default_dimensions
+        )
+        self._monk_exception_counter = _create_or_fake_counter(
+            METRICS_TOTAL_PREFIX + LOG_LINE_MONK_EXCEPTION,
+            default_dimensions
+        )
+        self._monk_timeout_counter = _create_or_fake_counter(
+            METRICS_TOTAL_PREFIX + LOG_LINE_MONK_TIMEOUT,
+            default_dimensions
+        )
         self._sample_rate = sample_rate
+        self._lock = threading.RLock()
 
     @contextmanager
     def sampled_request(self):
         """Context manager that records metrics if it's selected as part of the sample, otherwise runs as usual."""
-        self._sample_counter += 1
-        if self._sample_rate and self._sample_counter % self._sample_rate == 0:
-            self._total_log_line_sent.count(value=self._sample_counter);
-            self._sample_counter = 0
+        sample_request = False
+        with self._lock:
+            self._sample_counter += 1
+            sample_request = self._sample_rate and self._sample_counter % self._sample_rate == 0
+        if sample_request:
             start_time = time.time()
             yield  # Do the actual work
-            self._sample_log_line_sent.count()
             duration = _convert_to_microseconds(time.time() - start_time)
-            self._sample_log_line_latency.record(value=duration)
+            with self._lock:
+                self._total_log_line_sent.count(value=self._sample_counter);
+                self._sample_log_line_latency.record(value=duration)
+                self._sample_counter = 0
         else:
             yield  # Do the actual work
+
+    def monk_exception(self):
+        """Increases the monk exception counter by 1"""
+        with self._lock:
+            self._monk_exception_counter.count(1)
+
+    def monk_timeout(self):
+        """Increases the monk timeout counter by 1"""
+        with self._lock:
+            self._monk_timeout_counter.count(1)
