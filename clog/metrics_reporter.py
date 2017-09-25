@@ -76,10 +76,6 @@ class MetricsReporter(object):
     def __init__(self, backend, sample_rate=0):
         default_dimensions = { 'backend': backend }
         self._sample_counter = 0
-        self._sample_log_line_sent = _create_or_fake_counter(
-            METRICS_SAMPLE_PREFIX + LOG_LINE_SENT,
-            default_dimensions
-        )
         self._sample_log_line_latency = _create_or_fake_timer(
             METRICS_SAMPLE_PREFIX + LOG_LINE_LATENCY,
             default_dimensions
@@ -112,7 +108,6 @@ class MetricsReporter(object):
             duration = _convert_to_microseconds(time.time() - start_time)
             with self._lock:
                 self._total_log_line_sent.count(value=self._sample_counter);
-                self._sample_log_line_sent.count()
                 self._sample_log_line_latency.record(value=duration)
                 self._sample_counter = 0
         else:

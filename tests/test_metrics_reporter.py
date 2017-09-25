@@ -25,37 +25,27 @@ class TestMetricsReporter(object):
 
     def test_metrics_reporter_sampling(self):
         metrics = MetricsReporter(backend="test", sample_rate=3)
-        metrics._sample_log_line_sent = mock.Mock(FakeMetric())
 
         assert metrics._sample_counter == 0
         # First try, not part of sample
         with metrics.sampled_request():
-            assert not metrics._sample_log_line_sent.count.called
             assert metrics._sample_counter == 1
-        assert not metrics._sample_log_line_sent.count.called
 
         # Second try, not part of sample
         with metrics.sampled_request():
-            assert not metrics._sample_log_line_sent.count.called
             assert metrics._sample_counter == 2
-        assert not metrics._sample_log_line_sent.count.called
 
         # Third try, part of sample, so called outside the context
         with metrics.sampled_request():
-            assert not metrics._sample_log_line_sent.count.called
             assert metrics._sample_counter == 3
-        assert metrics._sample_log_line_sent.count.call_count == 1
         assert metrics._sample_counter == 0
 
     def test_zero_sample_rate(self):
         metrics = MetricsReporter(backend="test", sample_rate=0)
-        metrics._sample_log_line_sent = mock.Mock(FakeMetric())
         assert metrics._sample_counter == 0
         # Should never sample
         with metrics.sampled_request():
-            assert not metrics._sample_log_line_sent.count.called
             assert metrics._sample_counter == 1
-        assert not metrics._sample_log_line_sent.count.called
 
     @mock.patch('clog.metrics_reporter.create_counter', create=True, side_effect=NameError)
     def test_fake_counter_creation(self, mock_create_counter):
@@ -72,7 +62,6 @@ class TestMetricsReporter(object):
     def test_fake_metric_functionality(self):
         metrics = MetricsReporter(backend="test", sample_rate=1)
         # Monkeypatch in the fake counters
-        metrics._sample_log_line_sent = FakeMetric()
         metrics._sample_log_line_latency = FakeMetric()
         metrics._total_log_line_sent = FakeMetric()
 
