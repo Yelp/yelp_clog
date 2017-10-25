@@ -77,7 +77,7 @@ def check_create_default_loggers():
             loggers.append(logger)
 
         if use_zipkin():
-            loggers = map(ZipkinTracing, loggers)
+            loggers = list(map(ZipkinTracing, loggers))
 
         if not loggers and not config.is_logging_configured:
             raise LoggingNotConfiguredError
