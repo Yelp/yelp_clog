@@ -71,6 +71,8 @@ def check_create_default_loggers():
             loggers.append(StdoutLogger())
 
         if not config.monk_disable:
+            # TODO: this check should be removed once most libraries have
+            # been moved to use the "internal" extra-requires.
             if monk_dependency_installed:
                 logger = MonkLogger(
                     config.monk_client_id,
