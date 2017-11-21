@@ -176,13 +176,32 @@ class StreamTailerSetupError(Exception):
     def __repr__(self):
         return "<StreamTailerSetupError host=%r port=%r message=%r>" % (self.host, self.port, self.message)
 
+
 def get_settings(setting):
     with open(SETTINGS_FILE) as settings_file:
         settings = load(settings_file)
     return settings[setting]
 
 
-def find_tail_host(host=None):
+def find_tail_host(host=None, raise_on_error=False):
+    """Find the hostname to tail Scribe logs from, given a Scribe hostname.
+
+    Scribe hosts are only capable of ingesting data, they should however have
+    their tailing counterpart living somewhere.
+    This is done by reading the correct host mapping from the settings file.
+
+    Example Usage:
+
+    .. code-block:: python
+
+        host = find_tail_host(host='my-scribe-host', raise_on_error=True)
+
+    :param host: Scribe host, defaults to DEFAULT_SCRIBE_TAIL_HOST from settings
+    :type  host: string
+    :param raise_on_error: Whether to raise an Exception upon failure or fail
+                           silently and use the Scribe host. Default: True.
+    :type  raise_on_error: bool
+    """
     try:
         if not host:
             host = get_settings('DEFAULT_SCRIBE_TAIL_HOST')
@@ -194,10 +213,11 @@ def find_tail_host(host=None):
                 tail_host = get_settings('REGION_TO_TAIL_HOST')[region]
             else:
                 tail_host = get_settings('ECOSYSTEM_TO_TAIL_HOST')[ecosystem]
-    except KeyError:
+    except (IOError, KeyError):
         tail_host = host
-    except IOError:
-        raise
+        if raise_on_error:
+            raise
+
     return tail_host
 
 
@@ -233,6 +253,8 @@ class StreamTailer(object):
     :type  automagic_recovery: bool
     :param add_newline: add newlines to the items yielded in the iter
     :type  add_newlines: bool
+    :param raise_on_host_not_found: raise an error if no tail host is found
+    :type  raise_on_host_not_found: bool
     :param raise_on_start: raise an error if you get a disconnect immediately
                            after starting (otherwise, returns silently),
                            Default True
@@ -258,6 +280,7 @@ class StreamTailer(object):
                  bufsize=4096,
                  automagic_recovery=True,
                  add_newlines=True,
+                 raise_on_host_not_found=True,
                  raise_on_start=True,
                  timeout=None,
                  reconnect_callback=None,
@@ -270,7 +293,10 @@ class StreamTailer(object):
             port = primary_tail_host['port']
 
         if use_kafka and not host.startswith('scribekafkaservices-'):
-            self.host = find_tail_host(host)
+            self.host = find_tail_host(
+                host=host,
+                raise_on_error=raise_on_host_not_found,
+            )
         else:
             self.host = host
 
