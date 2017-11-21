@@ -36,9 +36,13 @@ import six
 import pkg_resources
 
 import thriftpy
+
+# Will be set to True if the Monk dependency is installed, False otherwise
+monk_dependency_installed = True
 try:
     from monk.producers import MonkProducer
 except ImportError:
+    monk_dependency_installed = False
     pass
 
 from clog import config
