@@ -17,7 +17,8 @@ Log lines to scribe using the default global logger.
 """
 
 from clog import config
-from clog.loggers import FileLogger, MonkLogger, ScribeLogger, StdoutLogger
+from clog.loggers import FileLogger, get_default_reporter,\
+    monk_dependency_installed, MonkLogger, ScribeLogger, StdoutLogger
 from clog.zipkin_plugin import use_zipkin, ZipkinTracing
 
 # global logger, used by module-level functions
@@ -70,11 +71,18 @@ def check_create_default_loggers():
             loggers.append(StdoutLogger())
 
         if not config.monk_disable:
-            logger = MonkLogger(
-                config.monk_client_id,
-                stream_backend_map=stream_backend_map
-            )
-            loggers.append(logger)
+            # TODO: this check should be removed once most libraries have
+            # been moved to use the "internal" extra-requires.
+            if monk_dependency_installed:
+                logger = MonkLogger(
+                    config.monk_client_id,
+                    stream_backend_map=stream_backend_map
+                )
+                loggers.append(logger)
+            else:
+                reporter = get_default_reporter()
+                reporter(True, "Monk dependency not available. Monk logging will be disabled.")
+
 
         if use_zipkin():
             loggers = list(map(ZipkinTracing, loggers))
