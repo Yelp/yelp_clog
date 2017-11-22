@@ -169,8 +169,10 @@ class TestFindTailHost(object):
         assert tail_host == self.TEST_TAIL_HOST
 
     def test_with_file_missing(self, mock_get_settings_failed):
-        with pytest.raises(Exception):
-            readers.find_tail_host(host=self.TEST_HOST)
+        OTHER_TEST_HOST = 'fake-host-2'
+        tail_host = readers.find_tail_host(host=OTHER_TEST_HOST)
+
+        assert tail_host == OTHER_TEST_HOST
 
     def test_with_host_key_missing(self, mock_get_settings):
         OTHER_TEST_HOST = 'fake-host-2'

@@ -183,6 +183,26 @@ def get_settings(setting):
 
 
 def find_tail_host(host=None):
+    """Find the hostname to tail Scribe logs from, given a Scribe hostname.
+
+    Scribe hosts are only capable of ingesting data, they should however have
+    their tailing counterpart living somewhere.
+    This is done by reading the correct host mapping from the settings file.
+
+    In case of error (missing host mapping file or configuration), this function
+    returns the Scribe host given as argument. This can not be a correct tail
+    hostname, it is up to the caller to ensure the result can be used.
+
+    Example Usage:
+
+    .. code-block:: python
+
+        tail_host = find_tail_host(host='my-scribe-host')
+
+    :param host: Scribe host, defaults to DEFAULT_SCRIBE_TAIL_HOST from
+                 host mapping file
+    :type  host: string
+    """
     try:
         if not host:
             host = get_settings('DEFAULT_SCRIBE_TAIL_HOST')
@@ -194,10 +214,8 @@ def find_tail_host(host=None):
                 tail_host = get_settings('REGION_TO_TAIL_HOST')[region]
             else:
                 tail_host = get_settings('ECOSYSTEM_TO_TAIL_HOST')[ecosystem]
-    except KeyError:
+    except (IOError, KeyError):
         tail_host = host
-    except IOError:
-        raise
     return tail_host
 
 
@@ -244,6 +262,7 @@ class StreamTailer(object):
     :param protocol_opts: optional protocol parameters
     :type  protocol_opts: dict
     """
+    log = logging.getLogger('yelp_clog.readers.StreamTailer')
 
     scribe_tail_services = config.clog_namespace.get_list(
         'scribe_tail_services',
@@ -271,6 +290,12 @@ class StreamTailer(object):
 
         if use_kafka and not host.startswith('scribekafkaservices-'):
             self.host = find_tail_host(host)
+
+            # If SETTINGS_FILE is missing or is missing configuration,
+            # find_tail_host(host) will return host.
+            # `host` is usually a Scribe host not a tailer host
+            if self.host == host:
+                self.log.warn('Tailing host same as Scribe host. Is {} correct?'.format(SETTINGS_FILE))
         else:
             self.host = host
 
