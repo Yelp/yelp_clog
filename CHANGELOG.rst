@@ -1,5 +1,10 @@
 Release Notes
 =============
+2.11.0
+-----
+
+* Prevent exceptions if Monk is enabled but not installed
+
 2.6.2
 -----
 
