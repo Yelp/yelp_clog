@@ -295,7 +295,7 @@ class StreamTailer(object):
             # find_tail_host(host) will return host.
             # `host` is usually a Scribe host not a tailer host
             if self.host == host:
-                self.log.warn('Tailing host same as Scribe host. Is {} correct?'.format(SETTINGS_FILE))
+                self.log.warn('No configuration provided. Default tail hostname will be used')
         else:
             self.host = host
 
