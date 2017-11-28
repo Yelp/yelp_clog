@@ -43,7 +43,9 @@ _chunkfile_pat = re.compile(r'^(?P<stream>[a-z][-a-z0-9_]+)-(?P<year>\d{4})-(?P<
 
 COMPRESSED_HEADER_FMT = "<Q"
 
-SETTINGS_FILE = '/etc/yelp_clog.json'
+# Configuration files. Clog will check them in order,
+# and use the first existing one.
+SETTINGS_FILES = ['/nail/srv/configs/yelp_clog.json', '/etc/yelp_clog.json']
 
 
 class NoLogDataError(Exception):
@@ -176,10 +178,19 @@ class StreamTailerSetupError(Exception):
     def __repr__(self):
         return "<StreamTailerSetupError host=%r port=%r message=%r>" % (self.host, self.port, self.message)
 
+
 def get_settings(setting):
-    with open(SETTINGS_FILE) as settings_file:
-        settings = load(settings_file)
-    return settings[setting]
+    """Reads the specified setting from one of the files listed in the
+    SETTING_FILES variable. The first existing file will be used.
+    If no file in the list exist, an exception will be thrown."""
+    for file_path in SETTINGS_FILES:
+        try:
+            with open(file_path) as settings_file:
+                settings = load(settings_file)
+            return settings[setting]
+        except IOError:
+            continue
+    raise IOError("No clog configuration found (valid paths: {})".format(SETTINGS_FILES))
 
 
 def find_tail_host(host=None):
