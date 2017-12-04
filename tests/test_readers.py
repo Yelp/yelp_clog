@@ -168,24 +168,6 @@ class TestFindTailHost(object):
 
         assert tail_host == self.TEST_TAIL_HOST
 
-    @mock.patch('clog.readers.SETTINGS_FILES', ['/____1', '/____2'])
-    def test_get_settings_no_file(self):
-        with pytest.raises(IOError):
-            readers.get_settings('DEFAULT_SCRIBE_TAIL_HOST')
-
-    def test_get_settings(self):
-        with tempfile.NamedTemporaryFile('w') as config_file1, \
-                tempfile.NamedTemporaryFile('w') as config_file2:
-            config_file1.write('{"DEFAULT_SCRIBE_TAIL_HOST": "some_host_1"}')
-            config_file1.flush()
-            config_file2.write('{"DEFAULT_SCRIBE_TAIL_HOST": "some_host_2"}')
-            config_file2.flush()
-            with mock.patch(
-                'clog.readers.SETTINGS_FILES',
-                ['/wrong_file_1', config_file1.name, config_file2.name]
-            ):
-                assert readers.get_settings('DEFAULT_SCRIBE_TAIL_HOST') == 'some_host_1'
-
     def test_with_file_missing(self, mock_get_settings_failed):
         with pytest.raises(Exception):
             readers.find_tail_host(host=self.TEST_HOST)
