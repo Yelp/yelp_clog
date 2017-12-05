@@ -43,7 +43,7 @@ _chunkfile_pat = re.compile(r'^(?P<stream>[a-z][-a-z0-9_]+)-(?P<year>\d{4})-(?P<
 
 COMPRESSED_HEADER_FMT = "<Q"
 
-SETTINGS_FILE = '/etc/yelp_clog.json'
+SETTINGS_FILE = '/nail/srv/configs/yelp_clog.json'
 
 
 class NoLogDataError(Exception):
