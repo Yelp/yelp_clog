@@ -1,5 +1,11 @@
 Release Notes
 =============
+
+2.12.0
+-----
+
+* Change reader configuration file path (from /etc/yelp_clog.json to /nail/srv/configs/yelp_clog.json)
+
 2.11.0
 -----
 
