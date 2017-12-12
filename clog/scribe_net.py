@@ -91,18 +91,16 @@ class ScribeS3File(ScribeFile):
     def read(self, ostream=sys.stdout):
         """Read self into the ostream"""
         decompressor = zlib.decompressobj(31)
-        if six.PY2:
-            remainder = ""
-        else:
-            remainder = b""
+        # Python 2 works with string, python 3 with bytes
+        remainder = "" if six.PY2 else b""
         if self.key.name.endswith(".gz"):
             for data in self.key:
                 remainder += data
                 try:
+                    uncompressed = decompressor.decompress(remainder)
                     if six.PY2:
-                        ostream.write(decompressor.decompress(remainder).decode(encoding='UTF-8'))
-                    else:
-                        ostream.write(decompressor.decompress(remainder))
+                        uncompressed = uncompressed.decode(encoding='UTF-8')
+                    ostream.write(uncompressed)
                     remainder = decompressor.unconsumed_tail
                 except zlib.error:
                     # maybe we didn't have enough data in this chunk to
