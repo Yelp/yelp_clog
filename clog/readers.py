@@ -589,11 +589,11 @@ class NetCLogStreamReader(object):
                         temp_file.flush()
                         temp_file.seek(0)
                         for line in temp_file:
-                            # Python 3 will return byte arrays, while we want
-                            # utf-8 encoded strings
-                            if isinstance(line, bytes):
-                                line = line.decode('utf-8')
-                            yield line
+                            # Python 3 will return byte arrays instead of str
+                            if isinstance(line, str):
+                                yield line
+                            else:
+                                yield line.decode('utf-8')
                         temp_file.seek(0)
                         temp_file.truncate(0)
 

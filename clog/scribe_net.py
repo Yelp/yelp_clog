@@ -97,10 +97,7 @@ class ScribeS3File(ScribeFile):
             for data in self.key:
                 remainder += data
                 try:
-                    uncompressed = decompressor.decompress(remainder)
-                    if six.PY2:
-                        uncompressed = uncompressed.decode(encoding='UTF-8')
-                    ostream.write(uncompressed)
+                    ostream.write(decompressor.decompress(remainder))
                     remainder = decompressor.unconsumed_tail
                 except zlib.error:
                     # maybe we didn't have enough data in this chunk to
