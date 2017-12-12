@@ -589,6 +589,8 @@ class NetCLogStreamReader(object):
                         temp_file.flush()
                         temp_file.seek(0)
                         for line in temp_file:
+                            if isinstance(line, bytes):
+                                line = line.decode('utf-8')
                             yield line
                         temp_file.seek(0)
                         temp_file.truncate(0)

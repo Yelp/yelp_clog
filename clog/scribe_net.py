@@ -21,6 +21,8 @@ import re
 import sys
 import zlib
 
+import six
+
 # THIS MUST END IN A /
 S3PREFIX = "logs/"
 S3_KEY_RE = re.compile(r'.*/(?P<stream_name>[\w-]+)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/.+(?P<gz>\.gz)?$')
@@ -89,12 +91,18 @@ class ScribeS3File(ScribeFile):
     def read(self, ostream=sys.stdout):
         """Read self into the ostream"""
         decompressor = zlib.decompressobj(31)
-        remainder = ""
+        if six.PY2:
+            remainder = ""
+        else:
+            remainder = b""
         if self.key.name.endswith(".gz"):
             for data in self.key:
                 remainder += data
                 try:
-                    ostream.write(decompressor.decompress(remainder))
+                    if six.PY2:
+                        ostream.write(decompressor.decompress(remainder).decode(encoding='UTF-8'))
+                    else:
+                        ostream.write(decompressor.decompress(remainder))
                     remainder = decompressor.unconsumed_tail
                 except zlib.error:
                     # maybe we didn't have enough data in this chunk to
