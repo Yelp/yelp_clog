@@ -1,13 +1,18 @@
 Release Notes
 =============
 
+2.12.1
+------
+
+* Fix a compatiblity issue where gzipped logs weren't decompresser correctly in python 3.
+
 2.12.0
------
+------
 
 * Change reader configuration file path (from /etc/yelp_clog.json to /nail/srv/configs/yelp_clog.json)
 
 2.11.0
------
+------
 
 * Prevent exceptions if Monk is enabled but not installed
 
