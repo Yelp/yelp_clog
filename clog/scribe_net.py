@@ -21,6 +21,8 @@ import re
 import sys
 import zlib
 
+import six
+
 # THIS MUST END IN A /
 S3PREFIX = "logs/"
 S3_KEY_RE = re.compile(r'.*/(?P<stream_name>[\w-]+)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/.+(?P<gz>\.gz)?$')
@@ -89,7 +91,8 @@ class ScribeS3File(ScribeFile):
     def read(self, ostream=sys.stdout):
         """Read self into the ostream"""
         decompressor = zlib.decompressobj(31)
-        remainder = ""
+        # Python 2 works with string, python 3 with bytes
+        remainder = "" if six.PY2 else b""
         if self.key.name.endswith(".gz"):
             for data in self.key:
                 remainder += data
