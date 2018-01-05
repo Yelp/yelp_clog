@@ -251,6 +251,8 @@ class StreamTailer(object):
         help="List of Scribe endpoints for tailing, "
              "in the form {'host': host, 'port': port}")
 
+    default_tail_port = config.default_scribe_tail_port
+
     def __init__(self,
                  stream,
                  host=None,
@@ -265,9 +267,15 @@ class StreamTailer(object):
                  lines=None,
                  protocol_opts=None):
         if host is None or port is None:
-            primary_tail_host = random.choice(self.scribe_tail_services)
-            host = primary_tail_host['host']
-            port = primary_tail_host['port']
+            try:
+                primary_tail_host = random.choice(self.scribe_tail_services)
+                host = primary_tail_host['host']
+                port = primary_tail_host['port']
+            except Exception:
+                # Possible exceptions include IndexError if the list is empty
+                # or ConfigurationError if there is no list in the configuration
+                host = find_tail_host()
+                port = self.default_tail_port.value
 
         if use_kafka and not host.startswith('scribekafkaservices-'):
             self.host = find_tail_host(host)

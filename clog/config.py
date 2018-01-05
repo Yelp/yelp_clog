@@ -123,6 +123,10 @@ scribe_host = clog_namespace.get_string('scribe_host',
 scribe_port = clog_namespace.get_int('scribe_port',
     help="Port of the scribe server.")
 
+default_scribe_tail_port = clog_namespace.get_int('default_scribe_tail_port',
+    default=3535,
+    help="Default port of scribe tailing services.")
+
 scribe_retry_interval = clog_namespace.get_int('scribe_retry_interval',
     default=10,
     help="Seconds to wait between connection retries.")
