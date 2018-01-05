@@ -116,12 +116,13 @@ def get_default_reporter(use_syslog=None):
     return report_to_syslog if use_syslog else report_to_stderr
 
 
-def create_oversize_message_report(stream, line, preview_size=1000):
-    message_report = {}
-    message_report['stream'] = stream
-    message_report['line_size'] = len(line)
-    message_report['line_preview'] = line[preview_size:]
-    message_report['traceback'] = ''.join(traceback.format_stack())
+def create_oversize_message_report(stream, line, preview_size=1000, traceback_size=5000):
+    message_report = {
+        'stream': stream,
+        'line_size': len(line),
+        'line_preview': line[preview_size:],
+        'traceback': ''.join(traceback.format_stack())[traceback_size:],
+    }
     return json.dumps(message_report).encode('UTF-8')
 
 
@@ -193,7 +194,7 @@ class ScribeLogger(object):
     def _log_line_no_size_limit(self, stream, line):
         """Log a single line without size limit. It should not include any newline characters.
            Since this method is called in log_line, the line should be in utf-8 format and
-           less than MAX_SCRIBE_LINE_SIZE_IN_BYTES already. We don't limit traceback size.
+           less than MAX_SCRIBE_LINE_SIZE_IN_BYTES already.
         """
         with self.__lock, self.metrics.sampled_request():
             if os.getpid() != self._birth_pid:
@@ -291,7 +292,7 @@ class MonkLogger(object):
         if len(line) <= MAX_MONK_LINE_SIZE_IN_BYTES:
             self._log_line_no_size_limit(stream, line)
         else:
-            # log the origin of the stream with traceback to WHO_CLOG_LARGE_LINE_STREAM category
+            # log the origin of the stream with traceback to WHO_CLOG_LARGE_LINE_STREAM
             oversize_message_report = create_oversize_message_report(stream, line)
             self._log_line_no_size_limit(WHO_CLOG_LARGE_LINE_STREAM, oversize_message_report)
             self.report_status(
