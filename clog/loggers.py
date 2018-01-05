@@ -88,8 +88,10 @@ scribe_thrift = _load_thrift()
 # We do not want to have large log lines in scribe and later in kafka.
 # If a line size is larger than 50 MB, it will be dropped with an exception raised.
 # If it is larger than 5 MB, the origin of the message will be logged.
-MAX_LINE_SIZE_IN_BYTES = 52428800  # 50 MB
-WARNING_LINE_SIZE_IN_BYTES = 5242880  # 5 MB
+MAX_SCRIBE_LINE_SIZE_IN_BYTES = 52428800  # 50 MB
+WARNING_SCRIBE_LINE_SIZE_IN_BYTES = 5242880  # 5 MB
+# Log lines logged to Monk will be dropped if larger than 5MB
+MAX_MONK_LINE_SIZE_IN_BYTES = 5242880  # 5 MB
 WHO_CLOG_LARGE_LINE_STREAM = 'tmp_who_clog_large_line'
 
 
@@ -112,6 +114,15 @@ def get_default_reporter(use_syslog=None):
     """
     use_syslog = use_syslog if use_syslog is not None else config.scribe_errors_to_syslog
     return report_to_syslog if use_syslog else report_to_stderr
+
+
+def create_oversize_message_report(stream, line, preview_size=1000):
+    message_report = {}
+    message_report['stream'] = stream
+    message_report['line_size'] = len(line)
+    message_report['line_preview'] = line[preview_size:]
+    message_report['traceback'] = ''.join(traceback.format_stack())
+    return json.dumps(message_report).encode('UTF-8')
 
 
 class ScribeIsNotForkSafeError(Exception):
@@ -182,7 +193,7 @@ class ScribeLogger(object):
     def _log_line_no_size_limit(self, stream, line):
         """Log a single line without size limit. It should not include any newline characters.
            Since this method is called in log_line, the line should be in utf-8 format and
-           less than MAX_LINE_SIZE_IN_BYTES already. We don't limit traceback size.
+           less than MAX_SCRIBE_LINE_SIZE_IN_BYTES already. We don't limit traceback size.
         """
         with self.__lock, self.metrics.sampled_request():
             if os.getpid() != self._birth_pid:
@@ -223,32 +234,28 @@ class ScribeLogger(object):
             line = line.encode('UTF-8')
 
         # check log line size
-        if len(line) <= WARNING_LINE_SIZE_IN_BYTES:
+        if len(line) <= WARNING_SCRIBE_LINE_SIZE_IN_BYTES:
             self._log_line_no_size_limit(stream, line)
-        elif len(line) <= MAX_LINE_SIZE_IN_BYTES:
+        elif len(line) <= MAX_SCRIBE_LINE_SIZE_IN_BYTES:
             self._log_line_no_size_limit(stream, line)
 
             # log the origin of the stream with traceback to WHO_CLOG_LARGE_LINE_STREAM category
-            origin_info = {}
-            origin_info['stream'] = stream
-            origin_info['line_size'] = len(line)
-            origin_info['traceback'] = ''.join(traceback.format_stack())
-            log_line = json.dumps(origin_info).encode('UTF-8')
-            self._log_line_no_size_limit(WHO_CLOG_LARGE_LINE_STREAM, log_line)
+            oversize_message_report = create_oversize_message_report(stream, line)
+            self._log_line_no_size_limit(WHO_CLOG_LARGE_LINE_STREAM, oversize_message_report)
             self.report_status(
                 False,
                 'The log line size is larger than %r bytes (monitored in \'%s\')'
-                % (WARNING_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
+                % (WARNING_SCRIBE_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
             )
         else:
             # raise an exception if too large
             self.report_status(
                 True,
                 'The log line is dropped (line size larger than %r bytes)'
-                % MAX_LINE_SIZE_IN_BYTES
+                % MAX_SCRIBE_LINE_SIZE_IN_BYTES
             )
             raise LogLineIsTooLongError('The max log line size allowed is %r bytes'
-                % MAX_LINE_SIZE_IN_BYTES)
+                % MAX_SCRIBE_LINE_SIZE_IN_BYTES)
 
     def close(self):
         self.transport.close()
@@ -281,6 +288,21 @@ class MonkLogger(object):
         if backend not in ('monk', 'dual'):
             return
 
+        if len(line) <= MAX_MONK_LINE_SIZE_IN_BYTES:
+            self._log_line_no_size_limit(stream, line)
+        else:
+            # log the origin of the stream with traceback to WHO_CLOG_LARGE_LINE_STREAM category
+            oversize_message_report = create_oversize_message_report(stream, line)
+            self._log_line_no_size_limit(WHO_CLOG_LARGE_LINE_STREAM, oversize_message_report)
+            self.report_status(
+                False,
+                'The log line size is larger than %r bytes (monitored in \'%s\')'
+                % (WARNING_SCRIBE_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
+            )
+            self.metrics.monk_exception()
+
+
+    def _log_line_no_size_limit(self, stream, line):
         if time.time() < self.last_timeout + self.timeout_backoff_s:
             return
         with self.metrics.sampled_request():
