@@ -123,7 +123,7 @@ class TestCLogScribeLoggerLineSize(object):
 class TestCLogMonkLoggerLineSize(object):
 
     @pytest.yield_fixture(autouse=True)
-    def setup_sandbox(self):
+    def setup(self):
         self.stream = 'foo'
         loggers.MonkProducer = mock.Mock()
         self.logger = MonkLogger(
@@ -146,11 +146,12 @@ class TestCLogMonkLoggerLineSize(object):
         self.logger.log_line(self.stream, line)
         assert self.logger.report_status.call_count == 1
         assert mock_log_line_no_size_limit.call_count == 1
-        message_report = {}
-        message_report['stream'] = self.stream
-        message_report['line_size'] = len(line)
-        message_report['line_preview'] = line[1000:]
-        message_report['traceback'] = ''.join(mock_traceback)
+        message_report = {
+            'stream': self.stream,
+            'line_size': len(line),
+            'line_preview': line[1000:],
+            'traceback': ''.join(mock_traceback),
+        }
         message_report_line = json.dumps(message_report).encode('UTF-8')
         mock_log_line_no_size_limit.called_with(
             WHO_CLOG_LARGE_LINE_STREAM,

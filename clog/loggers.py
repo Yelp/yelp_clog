@@ -298,7 +298,7 @@ class MonkLogger(object):
             self.report_status(
                 False,
                 'The log line size is larger than %r bytes (monitored in \'%s\')'
-                % (WARNING_SCRIBE_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
+                % (MAX_MONK_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
             )
             self.metrics.monk_exception()
 
