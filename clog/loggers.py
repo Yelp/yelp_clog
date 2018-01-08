@@ -120,8 +120,8 @@ def create_oversize_message_report(stream, line, preview_size=1000, traceback_si
     message_report = {
         'stream': stream,
         'line_size': len(line),
-        'line_preview': line[preview_size:],
-        'traceback': ''.join(traceback.format_stack())[traceback_size:],
+        'line_preview': line[:preview_size],
+        'traceback': ''.join(traceback.format_stack())[:traceback_size],
     }
     return json.dumps(message_report).encode('UTF-8')
 

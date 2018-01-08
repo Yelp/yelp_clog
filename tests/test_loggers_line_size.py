@@ -18,6 +18,7 @@ import tempfile
 import mock
 import pytest
 import simplejson as json
+import six
 
 from clog import loggers
 from clog.loggers import LogLineIsTooLongError
@@ -112,7 +113,7 @@ class TestCLogScribeLoggerLineSize(object):
         origin_info = {}
         origin_info['stream'] = self.stream
         origin_info['line_size'] = len(line)
-        origin_info['line_preview'] = line[1000:]
+        origin_info['line_preview'] = line[:1000]
         origin_info['traceback'] = ''.join(mock_traceback)
         origin_info_line = json.dumps(origin_info).encode('UTF-8')
         call_2 = mock.call(WHO_CLOG_LARGE_LINE_STREAM, origin_info_line)
@@ -132,28 +133,27 @@ class TestCLogMonkLoggerLineSize(object):
         )
         self.logger.report_status = mock.Mock()
 
-    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit')
+    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
     def test_normal_line_size(self, mock_log_line_no_size_limit):
         line = create_test_line()
         self.logger.log_line(self.stream, line)
         assert not self.logger.report_status.called
-        mock_log_line_no_size_limit.assert_called_once_with(self.stream, line)
+        call_1 = mock.call(mock.ANY, self.stream, line)
+        mock_log_line_no_size_limit.assert_has_calls([call_1])
 
-    @mock.patch('traceback.format_stack')
-    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit')
+    @mock.patch('traceback.format_stack', autospac=True)
+    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
     def test_max_line_size(self, mock_log_line_no_size_limit, mock_traceback):
         line = create_test_line(MAX_MONK_LINE_SIZE_IN_BYTES)
         self.logger.log_line(self.stream, line)
         assert self.logger.report_status.call_count == 1
         assert mock_log_line_no_size_limit.call_count == 1
-        message_report = {
+        expected_message_report = {
             'stream': self.stream,
             'line_size': len(line),
-            'line_preview': line[1000:],
+            'line_preview': line[:1000].decode('UTF-8') if six.PY3 else line[:1000],
             'traceback': ''.join(mock_traceback),
         }
-        message_report_line = json.dumps(message_report).encode('UTF-8')
-        mock_log_line_no_size_limit.called_with(
-            WHO_CLOG_LARGE_LINE_STREAM,
-            message_report_line,
-        )
+        _, dest_stream, message_report_json = mock_log_line_no_size_limit.mock_calls[0][1]
+        assert dest_stream == WHO_CLOG_LARGE_LINE_STREAM
+        assert json.loads(message_report_json) == expected_message_report
