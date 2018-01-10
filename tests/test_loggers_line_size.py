@@ -18,11 +18,15 @@ import tempfile
 import mock
 import pytest
 import simplejson as json
+import six
 
+from clog import loggers
 from clog.loggers import LogLineIsTooLongError
-from clog.loggers import MAX_LINE_SIZE_IN_BYTES
+from clog.loggers import MAX_MONK_LINE_SIZE_IN_BYTES
+from clog.loggers import MAX_SCRIBE_LINE_SIZE_IN_BYTES
+from clog.loggers import MonkLogger
 from clog.loggers import ScribeLogger
-from clog.loggers import WARNING_LINE_SIZE_IN_BYTES
+from clog.loggers import WARNING_SCRIBE_LINE_SIZE_IN_BYTES
 from clog.loggers import WHO_CLOG_LARGE_LINE_STREAM
 from testing.sandbox import find_open_port
 from testing.sandbox import scribed_sandbox
@@ -53,8 +57,8 @@ class TestCLogScribeLoggerLineSize(object):
         shutil.rmtree(self.scribe_logdir)
 
     def test_line_size_constants(self):
-        assert MAX_LINE_SIZE_IN_BYTES == 50 * 1024 * 1024
-        assert WARNING_LINE_SIZE_IN_BYTES == 5 * 1024 * 1024
+        assert MAX_SCRIBE_LINE_SIZE_IN_BYTES == 50 * 1024 * 1024
+        assert WARNING_SCRIBE_LINE_SIZE_IN_BYTES == 5 * 1024 * 1024
         assert WHO_CLOG_LARGE_LINE_STREAM == 'tmp_who_clog_large_line'
 
     def test_log_line_no_size_limit(self):
@@ -66,28 +70,28 @@ class TestCLogScribeLoggerLineSize(object):
     @mock.patch('clog.loggers.ScribeLogger._log_line_no_size_limit')
     def test_normal_line_size(self, mock_log_line_no_size_limit):
         line = create_test_line()
-        assert len(line) <= WARNING_LINE_SIZE_IN_BYTES
+        assert len(line) <= WARNING_SCRIBE_LINE_SIZE_IN_BYTES
         self.logger.log_line(self.stream, line)
         assert not self.logger.report_status.called
         mock_log_line_no_size_limit.assert_called_once_with(self.stream, line)
 
     @mock.patch('clog.loggers.ScribeLogger._log_line_no_size_limit')
     def test_max_line_size(self, mock_log_line_no_size_limit):
-        line = create_test_line(MAX_LINE_SIZE_IN_BYTES)
-        assert len(line) > MAX_LINE_SIZE_IN_BYTES
+        line = create_test_line(MAX_SCRIBE_LINE_SIZE_IN_BYTES)
+        assert len(line) > MAX_SCRIBE_LINE_SIZE_IN_BYTES
         with pytest.raises(LogLineIsTooLongError):
             self.logger.log_line(self.stream, line)
         assert self.logger.report_status.called_with(
             True,
             'The log line is dropped (line size larger than %r bytes)'
-            % MAX_LINE_SIZE_IN_BYTES
+            % MAX_SCRIBE_LINE_SIZE_IN_BYTES
         )
         assert not mock_log_line_no_size_limit.called
 
     def test_large_msg(self):
         # We advertise support of messages up to 50 megs, so let's test that
         # we actually are able to log a 50 meg message to a real scribe server
-        test_str = '0' * MAX_LINE_SIZE_IN_BYTES
+        test_str = '0' * MAX_SCRIBE_LINE_SIZE_IN_BYTES
         self.logger.log_line(self.stream, test_str)
         expected = test_str.encode('UTF-8')
         wait_on_log_data(self.log_path, expected + b'\n')
@@ -95,21 +99,61 @@ class TestCLogScribeLoggerLineSize(object):
     @mock.patch('traceback.format_stack')
     @mock.patch('clog.loggers.ScribeLogger._log_line_no_size_limit')
     def test_warning_line_size(self, mock_log_line_no_size_limit, mock_traceback):
-        line = create_test_line(WARNING_LINE_SIZE_IN_BYTES)
-        assert len(line) > WARNING_LINE_SIZE_IN_BYTES
-        assert len(line) <= MAX_LINE_SIZE_IN_BYTES
+        line = create_test_line(WARNING_SCRIBE_LINE_SIZE_IN_BYTES)
+        assert len(line) > WARNING_SCRIBE_LINE_SIZE_IN_BYTES
+        assert len(line) <= MAX_SCRIBE_LINE_SIZE_IN_BYTES
         self.logger.log_line(self.stream, line)
         assert self.logger.report_status.called_with(
             False,
             'The log line size is larger than %r bytes (monitored in \'%s\')'
-            % (WARNING_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
+            % (WARNING_SCRIBE_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
         )
         assert mock_log_line_no_size_limit.call_count == 2
         call_1 = mock.call(self.stream, line)
         origin_info = {}
         origin_info['stream'] = self.stream
         origin_info['line_size'] = len(line)
+        origin_info['line_preview'] = line[:1000]
         origin_info['traceback'] = ''.join(mock_traceback)
         origin_info_line = json.dumps(origin_info).encode('UTF-8')
         call_2 = mock.call(WHO_CLOG_LARGE_LINE_STREAM, origin_info_line)
         mock_log_line_no_size_limit.assert_has_calls([call_1, call_2])
+
+
+@pytest.mark.acceptance_suite
+class TestCLogMonkLoggerLineSize(object):
+
+    @pytest.yield_fixture(autouse=True)
+    def setup(self):
+        self.stream = 'foo'
+        loggers.MonkProducer = mock.Mock()
+        self.logger = MonkLogger(
+            'clog_test_client_id',
+            stream_backend_map = {'foo': 'monk'}
+        )
+        self.logger.report_status = mock.Mock()
+
+    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
+    def test_normal_line_size(self, mock_log_line_no_size_limit):
+        line = create_test_line()
+        self.logger.log_line(self.stream, line)
+        assert not self.logger.report_status.called
+        call_1 = mock.call(mock.ANY, self.stream, line)
+        mock_log_line_no_size_limit.assert_has_calls([call_1])
+
+    @mock.patch('traceback.format_stack', autospec=True)
+    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
+    def test_max_line_size(self, mock_log_line_no_size_limit, mock_traceback):
+        line = create_test_line(MAX_MONK_LINE_SIZE_IN_BYTES)
+        self.logger.log_line(self.stream, line)
+        assert self.logger.report_status.call_count == 1
+        assert mock_log_line_no_size_limit.call_count == 1
+        expected_message_report = {
+            'stream': self.stream,
+            'line_size': len(line),
+            'line_preview': line[:1000].decode('UTF-8') if six.PY3 else line[:1000],
+            'traceback': ''.join(mock_traceback()),
+        }
+        _, dest_stream, message_report_json = mock_log_line_no_size_limit.mock_calls[0][1]
+        assert dest_stream == WHO_CLOG_LARGE_LINE_STREAM
+        assert json.loads(message_report_json) == expected_message_report
