@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+2.13.0
+------
+
+* When creating a ScribeTailer instance, fall back to find_tail_host() if no tail service host
+  is specified and the configuration is not set.
+* Implement size limit for MonkLogger (5MB)
+
 2.12.1
 ------
 
