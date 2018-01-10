@@ -34,6 +34,7 @@ import signal
 import yaml
 from datetime import timedelta
 from simplejson import load
+from staticconf.errors import ConfigurationError
 from tempfile import TemporaryFile
 
 from clog import config
@@ -265,9 +266,13 @@ class StreamTailer(object):
                  lines=None,
                  protocol_opts=None):
         if host is None or port is None:
-            primary_tail_host = random.choice(self.scribe_tail_services)
-            host = primary_tail_host['host']
-            port = primary_tail_host['port']
+            try:
+                primary_tail_host = random.choice(self.scribe_tail_services)
+                host = primary_tail_host['host']
+                port = primary_tail_host['port']
+            except (IndexError, ConfigurationError):
+                host = find_tail_host()
+                port = config.default_scribe_tail_port.value
 
         if use_kafka and not host.startswith('scribekafkaservices-'):
             self.host = find_tail_host(host)

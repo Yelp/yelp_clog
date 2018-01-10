@@ -22,7 +22,7 @@ import time
 import mock
 import pytest
 
-from clog import readers, loggers
+from clog import config, readers, loggers
 from testing.sandbox import scribed_sandbox
 from testing.sandbox import wait_on_log_data
 from testing.sandbox import find_open_port
@@ -177,3 +177,40 @@ class TestFindTailHost(object):
         tail_host = readers.find_tail_host(host=OTHER_TEST_HOST)
 
         assert tail_host == OTHER_TEST_HOST
+
+
+class TestStreamTailer(object):
+
+    @pytest.yield_fixture
+    def mock_find_tail_host(self):
+        with mock.patch(
+            'clog.readers.find_tail_host',
+            autospec=True,
+            return_value='fake-tail-host',
+        ):
+            yield
+
+    @pytest.mark.parametrize('scribe_tail_services', [None, []])
+    def test_no_host_no_config(self, mock_find_tail_host, scribe_tail_services):
+        config.configure_from_dict({
+            'scribe_tail_services': scribe_tail_services,
+            'default_scribe_tail_port': 3535,
+        })
+
+        tailer = readers.StreamTailer('fake-stream')
+
+        assert tailer.host == 'fake-tail-host'
+        assert tailer.port == 3535
+
+    def test_no_host_with_config(self, mock_find_tail_host):
+        config_data = {
+            'scribe_tail_services': [{
+                'host': 'scribekafkaservices-fake-host',
+                'port': 1234,
+            }],
+        }
+        config.configure_from_dict(config_data)
+        tailer = readers.StreamTailer('fake-stream')
+
+        assert tailer.host == 'scribekafkaservices-fake-host'
+        assert tailer.port == 1234
