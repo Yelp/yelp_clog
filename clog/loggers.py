@@ -301,6 +301,9 @@ class MonkLogger(object):
                 )
                 self.metrics.monk_exception()
 
+    def close(self):
+        self.producer.close()
+
 
 class FileLogger(object):
     """Implementation that logs to local files under a directory"""
