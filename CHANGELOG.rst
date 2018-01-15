@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+2.14.0
+------
+
+* Add close() method to MonkLogger
+
 2.13.0
 ------
 
