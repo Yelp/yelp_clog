@@ -1,10 +1,19 @@
 language: python
 python:
-- '2.6'
 - '2.7'
-- '3.3'
 - '3.4'
-install: pip install -r requirements.txt
+- '3.5'
+- '3.6'
+env:
+- LD_LIBRARY_PATH=/usr/local/lib/ BOTO_CONFIG=/tmp/nowhere
+# BOTO_CONFIG: See https://github.com/travis-ci/travis-ci/issues/5246
+before_install:
+- sudo bash .travis_bootstrap.sh
+- wget https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64.deb
+- sudo dpkg -i dumb-init_*.deb
+install:
+- pip install tox-travis
+- pip install -r requirements.txt
 script: make tests
 deploy:
   provider: pypi

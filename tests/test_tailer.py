@@ -96,7 +96,9 @@ class TestStreamTailerAcceptance(object):
         lines = wait_on_lines(self.tailer, 1)
         assert lines == [eszett_str_utf8]
 
-def test_find_tail_host():
+@mock.patch('clog.readers.get_settings')
+def test_find_tail_host(mock_settings):
+    mock_settings.return_value = {}
     assert readers.find_tail_host('fakehost') == 'fakehost'
 
 def test_construct_conn_msg_without_lines():
