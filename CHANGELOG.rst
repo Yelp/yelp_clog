@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-master
+2.15.0
 ------
 
 * Use scribify function to convert MonkLogger stream names, for
