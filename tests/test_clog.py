@@ -26,9 +26,10 @@ import pytest
 import six
 import staticconf.testing
 
+from clog import loggers
 from clog.handlers import CLogHandler, DEFAULT_FORMAT
 from clog.handlers import get_scribed_logger
-from clog.loggers import FileLogger, GZipFileLogger, MockLogger, StdoutLogger
+from clog.loggers import FileLogger, GZipFileLogger, MockLogger, MonkLogger, StdoutLogger
 from clog.utils import scribify
 
 
@@ -198,3 +199,27 @@ class TestStdoutLogger(object):
             mock.call('stream1:{0}\n'.format(second_line))
         ])
         assert mock_stdout.flush.call_count == 1
+
+
+@pytest.mark.acceptance_suite
+class TestCLogMonkLogger(object):
+
+    @pytest.yield_fixture(autouse=True)
+    def setup(self):
+        self.stream = 'test.stream'
+        loggers.MonkProducer = mock.Mock()
+        self.logger = MonkLogger(
+            'clog_test_client_id',
+            stream_backend_map = {
+                'test.stream': 'monk',
+                'test_stream': 'scribe',
+            }
+        )
+        self.logger.report_status = mock.Mock()
+
+    @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
+    def test_category_name_conversion(self, mock_log_line_no_size_limit):
+        line = "content"
+        self.logger.log_line(self.stream, line)
+        call_1 = mock.call(mock.ANY, "test_stream", line)
+        mock_log_line_no_size_limit.assert_has_calls([call_1])

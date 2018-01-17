@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+master
+------
+
+* Use scribify function to convert MonkLogger stream names, for
+  backward compatibility with ScribeLogger.
+
 2.14.0
 ------
 

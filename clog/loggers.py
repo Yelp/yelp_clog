@@ -289,6 +289,8 @@ class MonkLogger(object):
         if backend not in ('monk', 'dual'):
             return
 
+        # For backward-compatibility with the ScribeLogger
+        stream = scribify(stream)
         if len(line) <= MAX_MONK_LINE_SIZE_IN_BYTES:
             self._log_line_no_size_limit(stream, line)
         else:
