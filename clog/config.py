@@ -86,14 +86,20 @@ monk_disable = clog_namespace.get_bool('monk_disable',
     default=True,
     help="Disable writing logs to monk.")
 
-default_backend = clog_namespace.get_string('default_backend',
+preferred_backend = clog_namespace.get_string('preferred_backend',
     default="scribe",
-    help="The default backend to use (can be 'scribe', 'monk' or 'dual')")
+    help="If both Scribe and Monk are available, this configuration "
+    "specifies which one should be used ('scribe', 'monk' or 'dual'). "
+    "If either Scribe or Monk are not enabled or usable, this parameter will "
+    "be ignored."
+)
 
-stream_backend = clog_namespace.get_list('stream_backend',
+preferred_backend_map = clog_namespace.get_list('preferred_backend_map',
     default=[],
-    help="The map of stream names to backend ('scribe', 'monk' or 'dual'). "
-    "If not specified, the default one will be used. The mapping must be "
+    help="The map of stream to preferred backend ('scribe', 'monk' or 'dual'). "
+    "If both Scribe and Monk are available, this map will specify for each "
+    "stream, which backend will be used. If not specified, the backend "
+    "specified in 'preferred_backend' will be used. The mapping must be "
     "represente as a list using the format\n"
     "    - stream_name: backend_name"
 )
