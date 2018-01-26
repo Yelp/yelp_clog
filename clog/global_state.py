@@ -17,8 +17,8 @@ Log lines to scribe using the default global logger.
 """
 
 from clog import config
-from clog.loggers import FileLogger, get_default_reporter,\
-    monk_dependency_installed, ScribeMonkLogger, MonkLogger, ScribeLogger, StdoutLogger
+from clog.loggers import FileLogger, monk_dependency_installed,\
+    ScribeMonkLogger, MonkLogger, ScribeLogger, StdoutLogger
 from clog.zipkin_plugin import use_zipkin, ZipkinTracing
 
 # global logger, used by module-level functions
