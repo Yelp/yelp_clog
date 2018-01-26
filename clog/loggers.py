@@ -315,6 +315,9 @@ class MonkLogger(object):
                 )
                 self.metrics.monk_exception()
 
+    def close(self):
+        self.producer.close()
+
 
 class ScribeMonkLogger(object):
 

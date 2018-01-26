@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2015 Yelp Inc.
+# Copyright 2018 Yelp Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 import mock
 import pytest
 import staticconf.testing
@@ -80,8 +79,8 @@ class TestGlobalState(object):
 
     def test_global_state_monk_not_installed(self):
         config.configure_from_dict(SCRIBE_MONK_CONFIG)
-        global_state.monk_dependency_installed = True
+        global_state.monk_dependency_installed = False
         clog.loggers.MonkProducer = mock.Mock()
         check_create_default_loggers()
         assert len(global_state.loggers) == 1
-        assert isinstance(global_state.loggers[0], loggers.ScribeMonkLogger)
+        assert isinstance(global_state.loggers[0], loggers.ScribeLogger)
