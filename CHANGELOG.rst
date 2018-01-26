@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+master
+------
+
+* Remove backend_map logic from ScribeLogger and MonkLogger.
+* When Monk is enabled, use ScribeMonkLogger instead of using MonkLogger directly.
+* Implement preferred_backend logic in ScribeMonkLogger. See preferred_backend and
+  preferred_backend_map in config.py.
+
 2.15.0
 ------
 

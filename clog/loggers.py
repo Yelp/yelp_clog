@@ -320,6 +320,9 @@ class MonkLogger(object):
 
 
 class ScribeMonkLogger(object):
+    """The ScribeMonkLogger is a wrapper around both the ScribeLogger and the MonkLogger.
+    The actuall logger being used will depend on the preferred_backend and preferred_backend_map.
+    """
 
     def __init__(self, config, scribe_logger, monk_logger, preferred_backend_map={}):
         self.config = config
