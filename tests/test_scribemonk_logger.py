@@ -71,10 +71,12 @@ class TestScribeMonkLogger(object):
         logger.log_line('stream3', 'line3')
         logger.log_line('stream4', 'line4')
 
-        monk_call_1 = mock.call('stream1', 'line1')
-        monk_call_2 = mock.call('stream3', 'line3')
-        monk_logger.log_line.assert_has_calls([monk_call_1, monk_call_2])
-        scribe_call_1 = mock.call('stream2', 'line2')
-        scribe_call_2 = mock.call('stream3', 'line3')
-        scribe_call_3 = mock.call('stream4', 'line4')
-        scribe_logger.log_line.assert_has_calls([scribe_call_1, scribe_call_2, scribe_call_3])
+        monk_logger.log_line.assert_has_calls([
+            mock.call('stream1', 'line1'),
+            mock.call('stream3', 'line3')
+        ])
+        scribe_logger.log_line.assert_has_calls([
+            mock.call('stream2', 'line2'),
+            mock.call('stream3', 'line3'),
+            mock.call('stream4', 'line4')
+        ])
