@@ -208,13 +208,7 @@ class TestCLogMonkLogger(object):
     def setup(self):
         self.stream = 'test.stream'
         loggers.MonkProducer = mock.Mock()
-        self.logger = MonkLogger(
-            'clog_test_client_id',
-            stream_backend_map = {
-                'test.stream': 'monk',
-                'test_stream': 'scribe',
-            }
-        )
+        self.logger = MonkLogger('clog_test_client_id')
         self.logger.report_status = mock.Mock()
 
     @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)

@@ -149,14 +149,13 @@ class ScribeLogger(object):
         blocking (no timeout)
     """
 
-    def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None, stream_backend_map={}):
+    def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None):
         # set up thrift and scribe objects
         timeout = logging_timeout if logging_timeout is not None else config.scribe_logging_timeout
         self.socket = thriftpy.transport.socket.TSocket(six.text_type(host), int(port))
         if timeout:
             self.socket.set_timeout(timeout)
 
-        self.stream_backend_map = stream_backend_map
         self.transport = TFramedTransportFactory().get_transport(self.socket)
         protocol = TBinaryProtocolFactory(strict_read=False).get_protocol(self.transport)
         self.client = TClient(scribe_thrift.scribe, protocol)
@@ -226,10 +225,6 @@ class ScribeLogger(object):
            If the line size is over 5 MB, a message consisting origin stream information
            will be recorded at WHO_CLOG_LARGE_LINE_STREAM (in json format).
         """
-        backend = self.stream_backend_map.get(stream, config.default_backend)
-        if backend not in ('scribe', 'dual'):
-            return
-
         # log unicodes as their utf-8 encoded representation
         if isinstance(line, six.text_type):
             line = line.encode('UTF-8')
@@ -266,7 +261,7 @@ class ScribeLogger(object):
 class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
-    def __init__(self, client_id, host=None, port=None, stream_backend_map={}):
+    def __init__(self, client_id, host=None, port=None):
         self.stream_prefix = config.monk_stream_prefix
         self.report_status = get_default_reporter()
         self.metrics = MetricsReporter(
@@ -274,7 +269,6 @@ class MonkLogger(object):
             backend="monk"
         )
         self.timeout_backoff_s = config.monk_timeout_backoff_ms / 1000
-        self.stream_backend_map = stream_backend_map
         self.last_timeout = time.time() - self.timeout_backoff_s
         self.producer = MonkProducer(
             client_id,
@@ -285,10 +279,6 @@ class MonkLogger(object):
         )
 
     def log_line(self, stream, line):
-        backend = self.stream_backend_map.get(stream, config.default_backend)
-        if backend not in ('monk', 'dual'):
-            return
-
         # For backward-compatibility with the ScribeLogger
         stream = scribify(stream)
         if len(line) <= MAX_MONK_LINE_SIZE_IN_BYTES:
@@ -303,7 +293,6 @@ class MonkLogger(object):
                 % (MAX_MONK_LINE_SIZE_IN_BYTES, WHO_CLOG_LARGE_LINE_STREAM)
             )
             self.metrics.monk_exception()
-
 
     def _log_line_no_size_limit(self, stream, line):
         if time.time() < self.last_timeout + self.timeout_backoff_s:
@@ -328,6 +317,29 @@ class MonkLogger(object):
 
     def close(self):
         self.producer.close()
+
+
+class ScribeMonkLogger(object):
+    """The ScribeMonkLogger is a wrapper around both the ScribeLogger and the MonkLogger.
+    The actuall logger being used will depend on the preferred_backend and preferred_backend_map.
+    """
+
+    def __init__(self, config, scribe_logger, monk_logger, preferred_backend_map={}):
+        self.config = config
+        self.scribe_logger = scribe_logger
+        self.monk_logger = monk_logger
+        self.preferred_backend_map = preferred_backend_map
+
+    def log_line(self, stream, line):
+        backend = self.preferred_backend_map.get(stream, config.preferred_backend)
+        if backend in ('monk', 'dual'):
+            self.monk_logger.log_line(stream, line)
+        if backend in ('scribe', 'dual'):
+            self.scribe_logger.log_line(stream, line)
+
+    def close(self):
+        self.scribe_logger.close()
+        self.monk_logger.close()
 
 
 class FileLogger(object):

@@ -17,8 +17,8 @@ Log lines to scribe using the default global logger.
 """
 
 from clog import config
-from clog.loggers import FileLogger, get_default_reporter,\
-    monk_dependency_installed, MonkLogger, ScribeLogger, StdoutLogger
+from clog.loggers import FileLogger, monk_dependency_installed,\
+    ScribeMonkLogger, MonkLogger, ScribeLogger, StdoutLogger
 from clog.zipkin_plugin import use_zipkin, ZipkinTracing
 
 # global logger, used by module-level functions
@@ -28,15 +28,15 @@ class LoggingNotConfiguredError(Exception):
     pass
 
 
-def create_stream_backend_map():
+def create_preferred_backend_map():
     """PyStaticConfig doesn't support having a map in the configuration,
     so we represent a map as a list, and we use this function to generate
     an actual python dictionary from it."""
-    stream_backend_map = {}
-    for mapping in config.stream_backend:
+    preferred_backend_map = {}
+    for mapping in config.preferred_backend_map:
         key, value = list(mapping.items())[0]
-        stream_backend_map[key] = value
-    return stream_backend_map
+        preferred_backend_map[key] = value
+    return preferred_backend_map
 
 
 def check_create_default_loggers():
@@ -55,34 +55,25 @@ def check_create_default_loggers():
                 raise ValueError('log_dir not set; set it or disable clog_enable_file_logging')
             loggers.append(FileLogger())
 
-        stream_backend_map = create_stream_backend_map()
-
-        # possibly add logger that writes to scribe
         if not config.scribe_disable:
-            logger = ScribeLogger(
+            scribe_logger = ScribeLogger(
                 config.scribe_host,
                 config.scribe_port,
-                config.scribe_retry_interval,
-                stream_backend_map=stream_backend_map
+                config.scribe_retry_interval
             )
-            loggers.append(logger)
+            if not config.monk_disable and monk_dependency_installed:
+                scribe_monk_logger = ScribeMonkLogger(
+                    config,
+                    scribe_logger,
+                    MonkLogger(config.monk_client_id),
+                    preferred_backend_map=create_preferred_backend_map()
+                )
+                loggers.append(scribe_monk_logger)
+            else:
+                loggers.append(scribe_logger)
 
         if config.clog_enable_stdout_logging:
             loggers.append(StdoutLogger())
-
-        if not config.monk_disable:
-            # TODO: this check should be removed once most libraries have
-            # been moved to use the "internal" extra-requires.
-            if monk_dependency_installed:
-                logger = MonkLogger(
-                    config.monk_client_id,
-                    stream_backend_map=stream_backend_map
-                )
-                loggers.append(logger)
-            else:
-                reporter = get_default_reporter()
-                reporter(True, "Monk dependency not available. Monk logging will be disabled.")
-
 
         if use_zipkin():
             loggers = list(map(ZipkinTracing, loggers))
