@@ -30,6 +30,7 @@ import socket
 import threading
 import time
 import traceback
+from collections import deque
 
 import simplejson as json
 import six
@@ -278,6 +279,13 @@ class MonkLogger(object):
             collect_metrics=False
         )
 
+        self.use_buffer = config.monk_use_memory_buffer.value
+        self.buffering_time_s = config.monk_buffering_time_ms.value / 1000.
+        self.maximum_buffer_bytes = config.monk_memory_buffer_max_bytes.value
+        self.buffer = deque()
+        self.buffer_bytes, self.buffering_start = 0, 0
+        self.buffering = False
+
     def log_line(self, stream, line):
         # For backward-compatibility with the ScribeLogger
         stream = scribify(stream)
@@ -295,8 +303,20 @@ class MonkLogger(object):
             self.metrics.monk_exception()
 
     def _log_line_no_size_limit(self, stream, line):
-        if time.time() < self.last_timeout + self.timeout_backoff_s:
+        now = time.time()
+
+        if self.buffering:
+            if now - self.buffering_start < self.buffering_time_s:
+                self._add_to_buffer(stream, line)
+                return
+            else:
+                self.buffering = False
+                self._flush_buffer()
+                self.report_status(False, 'Flushed buffer ({} left)'.format(len(self.buffer)))
+
+        if now < self.last_timeout + self.timeout_backoff_s:
             return
+
         with self.metrics.sampled_request():
             try:
                 self.producer.send_messages(
@@ -304,18 +324,45 @@ class MonkLogger(object):
                     [line],
                     None
                 )
-            except socket.timeout as e:
-                self.report_status(True, 'Monk took too long to respond')
-                self.last_timeout = time.time()
-                self.metrics.monk_timeout()
             except Exception as e:
-                self.report_status(
-                    True,
-                    'Exception while sending to monk: %s' % str(e)
-                )
-                self.metrics.monk_exception()
+                if isinstance(e, socket.timeout):
+                    self.report_status(True, 'Monk took too long to respond')
+                    self.metrics.monk_timeout()
+                    self.last_timeout = now
+                else:
+                    self.report_status(True, 'Exception while sending to monk: %s' % str(e))
+                    self.metrics.monk_exception()
+
+                self._start_buffering(now)
+                self._add_to_buffer(stream, line)
+
+    def _start_buffering(self, now):
+        if not self.use_buffer:
+            return
+        self.buffering = True
+        self.report_status(False, 'Start buffering')
+        self.metrics.monk_buffer()
+        self.buffering_start = now
+
+    def _add_to_buffer(self, stream, line):
+        if not self.use_buffer:
+            return
+
+        while self.buffer_bytes + len(line) > self.maximum_buffer_bytes and len(self.buffer) > 0:
+            _, old_line = self.buffer.popleft()
+            self.buffer_bytes -= len(old_line)
+
+        self.buffer.append((stream, line))
+        self.buffer_bytes += len(line)
+
+    def _flush_buffer(self):
+        for _ in six.moves.range(len(self.buffer)):
+            stream, line = self.buffer.popleft()
+            self.buffer_bytes -= len(line)
+            self.log_line(stream, line)
 
     def close(self):
+        self._flush_buffer()
         self.producer.close()
 
 
