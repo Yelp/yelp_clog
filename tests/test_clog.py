@@ -222,10 +222,9 @@ class TestCLogMonkLogger(object):
 class TestCLogMonkMemoryLogger(object):
 
     @pytest.yield_fixture(autouse=True)
-    @mock.patch('monk.producers.MonkProducer', autospec=True)
-    def setup(self, producer):
+    def setup(self):
         self.stream = 'test.stream'
-        self.producer = producer
+        self.producer = mock.MagicMock()
         loggers.MonkProducer = mock.Mock()
         self.logger = MonkLogger('clog_test_client_id')
         self.logger.producer = self.producer
