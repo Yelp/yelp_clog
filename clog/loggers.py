@@ -24,6 +24,7 @@ import atexit
 import gzip
 import os
 import os.path
+import random
 import sys
 import syslog
 import socket
@@ -269,8 +270,9 @@ class MonkLogger(object):
             sample_rate=config.metrics_sample_rate,
             backend="monk"
         )
-        self.timeout_backoff_s = config.monk_timeout_backoff_ms / 1000
-        self.last_timeout = time.time() - self.timeout_backoff_s
+        jitter_s = random.random() * (config.monk_timeout_backoff_jitter_ms / 1000.0)
+        self.timeout_backoff_s = (config.monk_timeout_backoff_ms / 1000.0) + jitter_s
+        self.last_disconnect = time.time() - self.timeout_backoff_s
         self.producer = MonkProducer(
             client_id,
             host,
@@ -280,10 +282,9 @@ class MonkLogger(object):
         )
 
         self.use_buffer = config.monk_use_memory_buffer.value
-        self.buffering_time_s = config.monk_buffering_time_ms.value / 1000.
         self.maximum_buffer_bytes = config.monk_memory_buffer_max_bytes.value
         self.buffer = deque()
-        self.buffer_bytes, self.buffering_start = 0, 0
+        self.buffer_bytes = 0
         self.buffering = False
 
     def log_line(self, stream, line):
@@ -306,7 +307,7 @@ class MonkLogger(object):
         now = time.time()
 
         if self.buffering:
-            if now - self.buffering_start < self.buffering_time_s:
+            if now - self.last_disconnect < self.timeout_backoff_s:
                 self._add_to_buffer(stream, line)
                 return
             else:
@@ -314,7 +315,7 @@ class MonkLogger(object):
                 self._flush_buffer()
                 self.report_status(False, 'Flushed buffer ({} left)'.format(len(self.buffer)))
 
-        if now < self.last_timeout + self.timeout_backoff_s:
+        if now - self.last_disconnect < self.timeout_backoff_s:
             return
 
         with self.metrics.sampled_request():
@@ -328,21 +329,16 @@ class MonkLogger(object):
                 if isinstance(e, socket.timeout):
                     self.report_status(True, 'Monk took too long to respond')
                     self.metrics.monk_timeout()
-                    self.last_timeout = now
                 else:
                     self.report_status(True, 'Exception while sending to monk: %s' % str(e))
                     self.metrics.monk_exception()
 
-                self._start_buffering(now)
-                self._add_to_buffer(stream, line)
-
-    def _start_buffering(self, now):
-        if not self.use_buffer:
-            return
-        self.buffering = True
-        self.report_status(False, 'Start buffering')
-        self.metrics.monk_buffer()
-        self.buffering_start = now
+                self.last_disconnect = now
+                if self.use_buffer:
+                    self.buffering = True
+                    self.report_status(False, 'Start buffering')
+                    self.metrics.monk_buffer()
+                    self._add_to_buffer(stream, line)
 
     def _add_to_buffer(self, stream, line):
         if not self.use_buffer:

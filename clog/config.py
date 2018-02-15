@@ -123,6 +123,10 @@ monk_timeout_backoff_ms = clog_namespace.get_int('monk_timeout_backoff_ms',
     help=("After a timeout occurs, clog won't write to Monk for as many "
           "milliseconds as defined here"))
 
+monk_timeout_backoff_jitter_ms = clog_namespace.get_int('monk_timeout_backoff_jitter_ms',
+    default=100,
+    help="Jitter time after timeout backoff passed")
+
 monk_use_memory_buffer = clog_namespace.get_bool('monk_use_memory_buffer',
     default=False,
     help="Add lines to a memory buffer in case of a timeout.")
@@ -130,10 +134,6 @@ monk_use_memory_buffer = clog_namespace.get_bool('monk_use_memory_buffer',
 monk_memory_buffer_max_bytes = clog_namespace.get_int('monk_memory_buffer_max_bytes',
     default=10 * 1024 * 1024,
     help="(Approximate) Maximum size of the memory buffer.")
-
-monk_buffering_time_ms = clog_namespace.get_int('monk_buffering_time_ms',
-    default=500,
-    help="Time to buffer data for. After this time, buffer will try to be flushed.")
 
 scribe_host = clog_namespace.get_string('scribe_host',
     help="Hostname of the scribe server.")

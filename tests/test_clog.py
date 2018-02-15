@@ -230,10 +230,8 @@ class TestCLogMonkMemoryLogger(object):
         self.logger.producer = self.producer
         self.logger.use_buffer = True
         self.logger.maximum_buffer_bytes = 100 * 1024 * 1024
-        self.logger.buffering_time_s = 5
 
     def test_logger_fine(self):
-        # self.producer.send_messages.side_effect = ()
         self.logger.log_line(self.stream, 'content')
         assert self.producer.send_messages.call_count == 1
 
@@ -247,7 +245,7 @@ class TestCLogMonkMemoryLogger(object):
         assert len(self.logger.buffer) == 2
 
     def test_logger_reconnect(self):
-        self.logger.buffering_time_s = 0
+        self.logger.timeout_backoff_s = 0
         self.producer.send_messages.side_effect = (Exception(), (), ())
 
         self.logger.log_line(self.stream, 'content1')
@@ -296,7 +294,19 @@ class TestCLogMonkMemoryLogger(object):
 
         # If the connection is still down, ensure all lines are re-buffered once
         self.logger.buffering = False
+        self.logger.last_disconnect = 0
         self.logger._flush_buffer()
 
         assert len(self.logger.buffer) == 10
         assert self.producer.send_messages.call_count == 2
+
+    def test_buffering_disabled(self):
+        self.logger.use_buffer = False
+        self.logger.timeout_backoff_s = 0
+        self.producer.send_messages.side_effect = Exception()
+
+        for i in range(10):
+            self.logger.log_line(self.stream, 'content{}'.format(i))
+
+        assert len(self.logger.buffer) == 0
+        assert self.producer.send_messages.call_count == 10
