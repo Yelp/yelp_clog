@@ -305,18 +305,14 @@ class MonkLogger(object):
 
     def _log_line_no_size_limit(self, stream, line):
         now = time.time()
-
-        if self.buffering:
-            if now - self.last_disconnect < self.timeout_backoff_s:
-                self._add_to_buffer(stream, line)
-                return
-            else:
-                self.buffering = False
-                self._flush_buffer()
-                self.report_status(False, 'Flushed buffer ({} left)'.format(len(self.buffer)))
-
         if now - self.last_disconnect < self.timeout_backoff_s:
+            if self.buffering:
+                self._add_to_buffer(stream, line)
             return
+        elif self.buffering:
+            self.buffering = False
+            self._flush_buffer()
+            self.report_status(False, 'Flushed buffer ({} left)'.format(len(self.buffer)))
 
         with self.metrics.sampled_request():
             try:
