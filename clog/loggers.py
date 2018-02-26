@@ -285,7 +285,6 @@ class MonkLogger(object):
         self.maximum_buffer_bytes = config.monk_memory_buffer_max_bytes.value
         self.buffer = deque()
         self.buffer_bytes = 0
-        self.buffering = False
 
     def log_line(self, stream, line):
         # For backward-compatibility with the ScribeLogger
@@ -303,14 +302,12 @@ class MonkLogger(object):
             )
             self.metrics.monk_exception()
 
-    def _log_line_no_size_limit(self, stream, line):
+    def _log_line_no_size_limit(self, stream, line, can_flush_buffer=True):
         now = time.time()
         if now - self.last_disconnect < self.timeout_backoff_s:
-            if self.buffering:
-                self._add_to_buffer(stream, line)
+            self._add_to_buffer(stream, line)
             return
-        elif self.buffering:
-            self.buffering = False
+        elif can_flush_buffer and self.use_buffer:
             self._flush_buffer()
             self.report_status(False, 'Flushed buffer ({} left)'.format(len(self.buffer)))
 
@@ -331,7 +328,6 @@ class MonkLogger(object):
 
                 self.last_disconnect = now
                 if self.use_buffer:
-                    self.buffering = True
                     self.report_status(False, 'Start buffering')
                     self._add_to_buffer(stream, line)
 
@@ -350,7 +346,7 @@ class MonkLogger(object):
         for _ in six.moves.range(len(self.buffer)):
             stream, line = self.buffer.popleft()
             self.buffer_bytes -= len(line)
-            self._log_line_no_size_limit(stream, line)
+            self._log_line_no_size_limit(stream, line, can_flush_buffer=False)
 
     def close(self):
         self._flush_buffer()

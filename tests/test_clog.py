@@ -293,7 +293,6 @@ class TestCLogMonkMemoryLogger(object):
         assert self.producer.send_messages.call_count == 1
 
         # If the connection is still down, ensure all lines are re-buffered once
-        self.logger.buffering = False
         self.logger.last_disconnect = 0
         self.logger._flush_buffer()
 
