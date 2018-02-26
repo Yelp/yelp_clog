@@ -350,7 +350,7 @@ class MonkLogger(object):
         for _ in six.moves.range(len(self.buffer)):
             stream, line = self.buffer.popleft()
             self.buffer_bytes -= len(line)
-            self.log_line(stream, line)
+            self._log_line_no_size_limit(stream, line)
 
     def close(self):
         self._flush_buffer()
