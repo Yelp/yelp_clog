@@ -43,7 +43,6 @@ LOG_LINE_SENT = 'log_line.sent'
 LOG_LINE_LATENCY = 'log_line.latency_microseconds'
 LOG_LINE_MONK_EXCEPTION = 'log_line.monk_exception'
 LOG_LINE_MONK_TIMEOUT = 'log_line.monk_timeout'
-LOG_LINE_MONK_BUFFER = 'log_line.monk_buffer'
 
 
 def _create_or_fake_counter(*args, **kwargs):
@@ -93,10 +92,6 @@ class MetricsReporter(object):
             METRICS_TOTAL_PREFIX + LOG_LINE_MONK_TIMEOUT,
             default_dimensions
         )
-        self._monk_buffer_counter = _create_or_fake_counter(
-            METRICS_TOTAL_PREFIX + LOG_LINE_MONK_BUFFER,
-            default_dimensions
-        )
         self._sample_rate = sample_rate
         self._lock = threading.RLock()
 
@@ -127,8 +122,3 @@ class MetricsReporter(object):
         """Increases the monk timeout counter by 1"""
         with self._lock:
             self._monk_timeout_counter.count(1)
-
-    def monk_buffer(self):
-        """Increases the monk line buffering counter by 1"""
-        with self._lock:
-            self._monk_buffer_counter.count(1)

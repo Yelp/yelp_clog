@@ -333,7 +333,6 @@ class MonkLogger(object):
                 if self.use_buffer:
                     self.buffering = True
                     self.report_status(False, 'Start buffering')
-                    self.metrics.monk_buffer()
                     self._add_to_buffer(stream, line)
 
     def _add_to_buffer(self, stream, line):
