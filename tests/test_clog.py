@@ -207,9 +207,13 @@ class TestCLogMonkLogger(object):
     @pytest.yield_fixture(autouse=True)
     def setup(self):
         self.stream = 'test.stream'
+        self.producer = mock.MagicMock()
         loggers.MonkProducer = mock.Mock()
         self.logger = MonkLogger('clog_test_client_id')
         self.logger.report_status = mock.Mock()
+        self.logger.producer = self.producer
+        self.logger.use_buffer = True
+        self.logger.maximum_buffer_bytes = 100 * 1024 * 1024
 
     @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
     def test_category_name_conversion(self, mock_log_line_no_size_limit):
@@ -217,19 +221,6 @@ class TestCLogMonkLogger(object):
         self.logger.log_line(self.stream, line)
         call_1 = mock.call(mock.ANY, "test_stream", line)
         mock_log_line_no_size_limit.assert_has_calls([call_1])
-
-
-class TestCLogMonkMemoryLogger(object):
-
-    @pytest.yield_fixture(autouse=True)
-    def setup(self):
-        self.stream = 'test.stream'
-        self.producer = mock.MagicMock()
-        loggers.MonkProducer = mock.Mock()
-        self.logger = MonkLogger('clog_test_client_id')
-        self.logger.producer = self.producer
-        self.logger.use_buffer = True
-        self.logger.maximum_buffer_bytes = 100 * 1024 * 1024
 
     def test_logger_fine(self):
         self.logger.log_line(self.stream, 'content')
