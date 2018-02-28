@@ -207,9 +207,13 @@ class TestCLogMonkLogger(object):
     @pytest.yield_fixture(autouse=True)
     def setup(self):
         self.stream = 'test.stream'
+        self.producer = mock.MagicMock()
         loggers.MonkProducer = mock.Mock()
         self.logger = MonkLogger('clog_test_client_id')
         self.logger.report_status = mock.Mock()
+        self.logger.producer = self.producer
+        self.logger.use_buffer = True
+        self.logger.maximum_buffer_bytes = 100 * 1024 * 1024
 
     @mock.patch('clog.loggers.MonkLogger._log_line_no_size_limit', autospec=True)
     def test_category_name_conversion(self, mock_log_line_no_size_limit):
@@ -217,3 +221,82 @@ class TestCLogMonkLogger(object):
         self.logger.log_line(self.stream, line)
         call_1 = mock.call(mock.ANY, "test_stream", line)
         mock_log_line_no_size_limit.assert_has_calls([call_1])
+
+    def test_logger_fine(self):
+        self.logger.log_line(self.stream, 'content')
+        assert self.producer.send_messages.call_count == 1
+
+    def test_logger_disconnect(self):
+        self.producer.send_messages.side_effect = ((), Exception(), Exception())
+
+        for i in range(3):
+            self.logger.log_line(self.stream, 'content{}'.format(i))
+
+        assert self.producer.send_messages.call_count == 2
+        assert len(self.logger.buffer) == 2
+
+    def test_logger_reconnect(self):
+        self.logger.timeout_backoff_s = 0
+        self.producer.send_messages.side_effect = (Exception(), (), ())
+
+        self.logger.log_line(self.stream, 'content1')
+
+        assert len(self.logger.buffer) == 1
+
+        self.logger.log_line(self.stream, 'content2')
+
+        assert self.producer.send_messages.call_count == 3
+        assert len(self.logger.buffer) == 0
+
+    def test_memory_bytes(self):
+        self.producer.send_messages.return_value = True
+
+        assert self.logger.buffer_bytes == 0
+
+        for _ in range(10):
+            self.logger._add_to_buffer(self.stream, 'content')
+
+        assert self.logger.buffer_bytes == len('content') * 10
+
+        self.logger._flush_buffer()
+
+        assert self.logger.buffer_bytes == 0
+
+    def test_eviction(self):
+        self.logger.maximum_buffer_bytes = 10
+
+        for _ in range(3):
+            self.logger._add_to_buffer(self.stream, 'a' * 5)
+
+        assert len(self.logger.buffer) == 2
+
+        self.logger._add_to_buffer(self.stream, 'a' * 15)
+
+        assert len(self.logger.buffer) == 1
+
+    def test_reenqueue(self):
+        self.producer.send_messages.side_effect = Exception()
+
+        for i in range(10):
+            self.logger.log_line(self.stream, 'content{}'.format(i))
+
+        assert len(self.logger.buffer) == 10
+        assert self.producer.send_messages.call_count == 1
+
+        # If the connection is still down, ensure all lines are re-buffered once
+        self.logger.last_disconnect = 0
+        self.logger._flush_buffer()
+
+        assert len(self.logger.buffer) == 10
+        assert self.producer.send_messages.call_count == 2
+
+    def test_buffering_disabled(self):
+        self.logger.use_buffer = False
+        self.logger.timeout_backoff_s = 0
+        self.producer.send_messages.side_effect = Exception()
+
+        for i in range(10):
+            self.logger.log_line(self.stream, 'content{}'.format(i))
+
+        assert len(self.logger.buffer) == 0
+        assert self.producer.send_messages.call_count == 10
