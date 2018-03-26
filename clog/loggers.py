@@ -22,16 +22,18 @@ from __future__ import with_statement
 
 import atexit
 import gzip
+import logging
 import os
 import os.path
 import random
 import sys
-import syslog
 import socket
 import threading
 import time
 import traceback
 from collections import deque
+from logging.handlers import SysLogHandler
+from logging.handlers import SYSLOG_UDP_PORT
 
 import simplejson as json
 import six
@@ -98,10 +100,25 @@ WHO_CLOG_LARGE_LINE_STREAM = 'tmp_who_clog_large_line'
 
 
 def report_to_syslog(is_error, msg):
+    '''Report errors into Syslog.
+
+    Use Syslog with UDP in order not to be forced to write to a unix socket,
+    useful if yelp-clog is run inside docker containers with Syslog running
+    on the actual host.
+
+    Syslogs prepends 'ident: ' to messages with an identifier. This function
+    uses `clog` as identifier.
+    '''
     # only report errors to syslog
-    syslog.openlog(ident="clog")
     if is_error:
-        syslog.syslog(syslog.LOG_ALERT | syslog.LOG_USER, msg)
+        logger = logging.getLogger('clog-syslog')
+        if len(logger.handlers) == 0:
+            logger.addHandler(SysLogHandler(
+                address=(config.syslog_host_address.value, SYSLOG_UDP_PORT),
+                facility=SysLogHandler.LOG_USER,
+            ))
+
+        logger.error('clog: {}'.format(msg))
 
 
 def report_to_stderr(is_error, msg):
