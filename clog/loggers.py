@@ -113,6 +113,7 @@ def report_to_syslog(is_error, msg):
     if is_error:
         logger = logging.getLogger('clog-syslog')
         if len(logger.handlers) == 0:
+            logger.propagate = False  # Prevent errors from being logged via CLogHandler :)
             logger.addHandler(SysLogHandler(
                 address=(config.syslog_host_address.value, SYSLOG_UDP_PORT),
                 facility=SysLogHandler.LOG_USER,
