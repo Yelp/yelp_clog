@@ -325,7 +325,7 @@ class MonkLogger(object):
         if now - self.last_disconnect < self.timeout_backoff_s:
             self._add_to_buffer(stream, line)
             return
-        elif can_flush_buffer and self.use_buffer:
+        elif can_flush_buffer and self.use_buffer and len(self.buffer) > 0:
             self._flush_buffer()
             self.report_status(False, 'Flushed buffer ({} left)'.format(len(self.buffer)))
 
