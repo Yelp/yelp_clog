@@ -153,6 +153,10 @@ scribe_errors_to_syslog = clog_namespace.get_bool('scribe_errors_to_syslog',
     default=False,
     help="If True, send Scribe errors to syslog, otherwise to stderr")
 
+syslog_host_address = clog_namespace.get_string('syslog_host_address',
+    default='127.0.0.1',
+    help="Address of the syslog host, if needed")
+
 scribe_logging_timeout = clog_namespace.get_int('scribe_logging_timeout',
     default=1000,
     help="Milliseconds to time out scribe logging")
