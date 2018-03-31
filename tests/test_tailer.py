@@ -73,7 +73,7 @@ class TestStreamTailerAcceptance(object):
                 yield
         shutil.rmtree(scribe_logdir)
 
-    def test_log_and_tail(self):
+    def disabled_test_log_and_tail(self):
         nonce = get_nonce_str()
         num_lines, read_lines = 10, 8
         lines = ["%s %d" % (nonce, i) for i in range(num_lines)]
@@ -84,7 +84,7 @@ class TestStreamTailerAcceptance(object):
         result = wait_on_lines(self.tailer, read_lines)
         assert result == encoded_lines[:read_lines]
 
-    def test_unicode(self):
+    def disabled_test_unicode(self):
         eszett_str = get_nonce_str() + " " + u'\xdf'
         assert isinstance(eszett_str, six.text_type)
 

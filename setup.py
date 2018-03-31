@@ -32,7 +32,11 @@ setup(
     extras_require={
         'zipkin': ['py_zipkin'],
         'uwsgi': ['uWSGI'],
-        'internal': ['yelp_meteorite>=1.3.0,<2.0.0', 'monk>=0.4.0,<0.5.0']
+        'internal': [
+            'yelp_meteorite>=1.3.0,<2.0.0',
+            'monk>=0.4.0,<0.5.0',
+            'schematizer>=0.2.2',
+        ]
     },
     classifiers=[
         'Programming Language :: Python :: 2',

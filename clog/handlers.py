@@ -109,12 +109,22 @@ class MonkHandler(logging.Handler):
         :param stream: name of the monk stream logs will be sent to
         :param host: hostname of monk server
         :param port: port number of monk server
+        :param schematizer_host: hostname of schematizer server
+        :param schematizer_port: port number of schematizer server
         """
 
-    def __init__(self, client_id, stream, host=None, port=None):
+    def __init__(
+        self,
+        client_id,
+        stream,
+        host=None,
+        port=None,
+        schematizer_host=None,
+        schematizer_port=None,
+    ):
         logging.Handler.__init__(self)
         self.stream = stream
-        self.logger = MonkLogger(client_id, host, port)
+        self.logger = MonkLogger(client_id, host, port, schematizer_host, schematizer_port)
 
     def emit(self, record):
         try:

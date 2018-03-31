@@ -44,6 +44,9 @@ import thriftpy
 monk_dependency_installed = True
 try:
     from monk.producers import MonkProducer
+    from monk.producers import StreamNotFoundError
+    from schematizer.schematizer import SchematizerClient
+    import staticconf
 except ImportError:
     monk_dependency_installed = False
     pass
@@ -281,7 +284,14 @@ class ScribeLogger(object):
 class MonkLogger(object):
     """Wrapper around MonkProducer"""
 
-    def __init__(self, client_id, host=None, port=None):
+    def __init__(
+        self,
+        client_id,
+        host=None,
+        port=None,
+        schematizer_host=None,
+        schematizer_port=None,
+    ):
         self.stream_prefix = config.monk_stream_prefix
         self.report_status = get_default_reporter()
         self.metrics = MetricsReporter(
@@ -304,6 +314,29 @@ class MonkLogger(object):
         self.buffer = deque()
         self.buffer_bytes = 0
 
+        self.schematizer_client = None
+        self.schematizer_host = schematizer_host
+        self.schematizer_port = schematizer_port
+
+    def _setup_schematizer_if_needed(self):
+        if self.schematizer_client:
+            return
+
+        if self.schematizer_host is None or self.schematizer_port is None:
+            staticconf.YamlConfiguration(
+                '/nail/etc/services/services.yaml',
+                namespace='smartstack_services',
+            )
+        else:
+            staticconf.DictConfiguration(
+                {'schematizer.main': {
+                    'host': self.schematizer_host,
+                    'port': self.schematizer_port
+                }},
+                namespace='smartstack_services',
+            )
+        self.schematizer_client = SchematizerClient()
+
     def log_line(self, stream, line):
         # For backward-compatibility with the ScribeLogger
         stream = scribify(stream)
@@ -320,7 +353,40 @@ class MonkLogger(object):
             )
             self.metrics.monk_exception()
 
-    def _log_line_no_size_limit(self, stream, line, can_flush_buffer=True):
+    def _get_schema(self, stream):
+        return {
+            "type": "record",
+            "namespace": "scribe_log",
+            "name": stream,
+            "doc": ("This schema is not used to actually serialize or deserialize messages,"
+                "but stream will be assigned to this schema."),
+            "fields": [
+                {"type": "string", "name": "log_line", "doc": "log line string"}
+            ]
+        }
+
+    def _register_schema(self, stream):
+        self._setup_schematizer_if_needed()
+        try:
+            self.schematizer_client.register_schema_from_schema_json(
+                namespace='scribe_log',
+                source=stream,
+                schema_json=self._get_schema(stream),
+                source_owner_email=str(config.owner_email),
+                contains_pii=False,
+                cluster_type='scribe',
+                stream_policy='best_effort',
+            )
+            return True
+        except Exception as e:
+            self.report_status(
+                True,
+                'Exception while sending to schematizer register_schema request: %s' % str(e)
+            )
+            self.metrics.schematizer_exception()
+            return False
+
+    def _log_line_no_size_limit(self, stream, line, can_flush_buffer=True, recursion=False):
         now = time.time()
         if now - self.last_disconnect < self.timeout_backoff_s:
             self._add_to_buffer(stream, line)
@@ -340,6 +406,16 @@ class MonkLogger(object):
                 if isinstance(e, socket.timeout):
                     self.report_status(True, 'Monk took too long to respond')
                     self.metrics.monk_timeout()
+                elif isinstance(e, StreamNotFoundError):
+                    if config.use_schematizer and recursion is False:
+                        if self._register_schema(self.stream_prefix + stream):
+                            self._log_line_no_size_limit(stream, line, recursion=True)
+                    else:
+                        self.report_status(
+                            True,
+                            'StreamNotFoundError while sending to monk: %s' % str(e)
+                        )
+                        self.metrics.monk_exception()
                 else:
                     self.report_status(True, 'Exception while sending to monk: %s' % str(e))
                     self.metrics.monk_exception()

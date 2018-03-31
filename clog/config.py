@@ -135,6 +135,10 @@ monk_memory_buffer_max_bytes = clog_namespace.get_int('monk_memory_buffer_max_by
     default=10 * 1024 * 1024,
     help="(Approximate) Maximum size of the memory buffer.")
 
+owner_email = clog_namespace.get_string('owner_email',
+    default=os.environ.get('PAASTA_MONITORING_TEAM', 'notavailable@yelp.com'),
+    help="Stream owner email.")
+
 scribe_host = clog_namespace.get_string('scribe_host',
     help="Hostname of the scribe server.")
 
@@ -168,6 +172,11 @@ localS3 = clog_namespace.get_bool('localS3',
 use_kafka = clog_namespace.get_bool('use_kafka',
     default=False,
     help='If True, will tail from a stream via a service talking to Kafka')
+
+use_schematizer = clog_namespace.get_bool('use_schematizer',
+    default=False,
+    help='If True, will use schematizer to register clog schemas in MonkProducer')
+
 
 use_zipkin = clog_namespace.get_bool('use_zipkin',
     default=False,
