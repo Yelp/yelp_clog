@@ -27,7 +27,7 @@ setup(
         'thriftpy',
         'PyStaticConfiguration >= 0.10.3',
         'simplejson',
-        'six>=1.4.0',
+        'six>=1.7.3',
     ],
     extras_require={
         'zipkin': ['py_zipkin'],
