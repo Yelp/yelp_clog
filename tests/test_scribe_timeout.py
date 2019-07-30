@@ -17,7 +17,7 @@ from contextlib import contextmanager
 import mock
 import pytest
 import staticconf.testing
-from thriftpy.transport.socket import TSocket
+from thriftpy2.transport.socket import TSocket
 
 from clog import config
 from clog.loggers import ScribeLogger
@@ -39,7 +39,7 @@ class TestScribeLoggerTimeout(object):
 
     @contextmanager
     def construct_scribelogger_with_mocked_tsocket(self, timeout=None):
-        with mock.patch('thriftpy.transport.socket.TSocket', spec=TSocket):
+        with mock.patch('thriftpy2.transport.socket.TSocket', spec=TSocket):
             if timeout is None:
                 yield ScribeLogger(HOST, PORT, RETRY)
             else:

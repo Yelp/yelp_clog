@@ -24,7 +24,7 @@ setup(
     package_data={'clog': ['fb303.thrift', 'scribe.thrift']},
     install_requires=[
         'boto>=2.0.0',
-        'thriftpy',
+        'thriftpy2',
         'PyStaticConfiguration >= 0.10.3',
         'simplejson',
         'six>=1.4.0',

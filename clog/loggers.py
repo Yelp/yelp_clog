@@ -39,7 +39,7 @@ import simplejson as json
 import six
 import pkg_resources
 
-import thriftpy
+import thriftpy2
 
 monk_dependency_installed = True
 try:
@@ -52,12 +52,12 @@ from clog import config
 from clog.metrics_reporter import MetricsReporter
 from clog.utils import scribify
 
-import thriftpy.transport.socket
+import thriftpy2.transport.socket
 # TODO(SRV-1467) Do not use the cython implementations
-from thriftpy.protocol import TBinaryProtocolFactory
-from thriftpy.thrift import TClient
-from thriftpy.transport import TFramedTransportFactory
-from thriftpy.transport import TTransportException
+from thriftpy2.protocol import TBinaryProtocolFactory
+from thriftpy2.thrift import TClient
+from thriftpy2.transport import TFramedTransportFactory
+from thriftpy2.transport import TTransportException
 
 
 def _load_thrift():
@@ -81,7 +81,7 @@ def _load_thrift():
         pkg_resources.resource_filename('clog', 'scribe.thrift'),
     )
     include_dir = os.path.dirname(path)
-    return thriftpy.load(
+    return thriftpy2.load(
         path, module_name='scribe_thrift', include_dirs=[include_dir])
 
 
@@ -172,7 +172,7 @@ class ScribeLogger(object):
     def __init__(self, host, port, retry_interval, report_status=None, logging_timeout=None):
         # set up thrift and scribe objects
         timeout = logging_timeout if logging_timeout is not None else config.scribe_logging_timeout
-        self.socket = thriftpy.transport.socket.TSocket(six.text_type(host), int(port))
+        self.socket = thriftpy2.transport.socket.TSocket(six.text_type(host), int(port))
         if timeout:
             self.socket.set_timeout(timeout)
 
