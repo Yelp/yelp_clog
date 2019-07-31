@@ -1,3 +1,6 @@
+**yelp_clog is an archived project and is no longer maintained by Yelp.**
+=========================================================================
+
 [![Build Status](https://travis-ci.org/Yelp/yelp_clog.svg?branch=master)](https://travis-ci.org/Yelp/yelp_clog)
 [![Coverage Status](https://coveralls.io/repos/Yelp/yelp_clog/badge.svg)](https://coveralls.io/r/Yelp/yelp_clog)
 
